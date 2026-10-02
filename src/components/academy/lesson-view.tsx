@@ -23,6 +23,7 @@ import { useSessionId } from "@/hooks/use-session-id";
 import { Markdown } from "./markdown";
 import { CodePlayground } from "./code-playground";
 import { ReadingProgress } from "./reading-progress";
+import { BookmarkButton } from "./bookmark-button";
 import { TrackIcon } from "./track-icon";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -254,6 +255,11 @@ export function LessonView({ lessonId }: { lessonId: string }) {
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold">{lesson.title}</h1>
               <p className="text-muted-foreground mt-2">{lesson.summary}</p>
+            </div>
+
+            {/* Bookmark button */}
+            <div className="shrink-0 ms-auto">
+              <BookmarkButton lessonId={lesson.id} lessonTitle={lesson.title} />
             </div>
           </div>
         </div>

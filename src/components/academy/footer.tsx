@@ -40,6 +40,28 @@ export function Footer() {
               <li>إدارة حالة Zustand</li>
             </ul>
           </div>
+
+          <div>
+            <h4 className="text-sm font-bold mb-3">اختصارات لوحة المفاتيح</h4>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li className="flex items-center gap-2">
+                <kbd className="px-1.5 py-0.5 text-[10px] font-mono rounded border border-border bg-muted">J</kbd>
+                <span>الصفحة الرئيسية</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <kbd className="px-1.5 py-0.5 text-[10px] font-mono rounded border border-border bg-muted">K</kbd>
+                <span>تقدّمي</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <kbd className="px-1.5 py-0.5 text-[10px] font-mono rounded border border-border bg-muted">B</kbd>
+                <span>المحفوظات</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <kbd className="px-1.5 py-0.5 text-[10px] font-mono rounded border border-border bg-muted">T</kbd>
+                <span>الإنجازات</span>
+              </li>
+            </ul>
+          </div>
         </div>
 
         <div className="mt-8 pt-6 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">

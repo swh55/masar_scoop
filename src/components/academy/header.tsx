@@ -1,17 +1,20 @@
 "use client";
 
-import { GraduationCap, Menu, Trophy, BarChart3, Home, Flame } from "lucide-react";
+import { GraduationCap, Menu, Trophy, BarChart3, Home, Flame, Bookmark } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { HeaderXPIndicator } from "./xp-indicator";
 import { useUI } from "@/lib/store";
 import { useStreak } from "@/hooks/use-streak";
+import { useBookmarks } from "@/hooks/use-bookmarks";
 import { cn } from "@/lib/utils";
 
 export function Header() {
-  const { view, goHome, openProgress, openAchievements, setSidebarOpen } = useUI();
+  const { view, goHome, openProgress, openAchievements, openBookmarks, setSidebarOpen } = useUI();
   const { streak } = useStreak();
+  const { bookmarkIds } = useBookmarks();
+  const bookmarkCount = bookmarkIds.length;
 
   const isActive = (type: string) => view.type === type;
 
@@ -96,6 +99,24 @@ export function Header() {
           >
             <Trophy className="h-4 w-4" />
             <span className="hidden sm:inline">الإنجازات</span>
+          </Button>
+          <Button
+            variant={isActive("bookmarks") ? "secondary" : "ghost"}
+            size="sm"
+            onClick={openBookmarks}
+            className={cn(
+              "gap-2 relative",
+              isActive("bookmarks") && "bg-secondary"
+            )}
+            aria-label="الإشارات المرجعية"
+          >
+            <Bookmark className="h-4 w-4" />
+            {bookmarkCount > 0 && (
+              <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 text-white text-[10px] font-bold px-1">
+                {bookmarkCount}
+              </span>
+            )}
+            <span className="hidden md:inline">المحفوظات</span>
           </Button>
           <div className="me-1 ms-2 h-6 w-px bg-border" />
           <ThemeToggle />

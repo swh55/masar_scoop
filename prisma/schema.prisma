@@ -56,6 +56,7 @@ model Lesson {
 
   quiz        Quiz?
   progress    LessonProgress[]
+  bookmarks   Bookmark[]
 }
 
 /// اختبار قصير مرتبط بدرس
@@ -201,4 +202,16 @@ model DailyActivity {
 
   @@unique([sessionId, date])
   @@index([sessionId, date])
+}
+
+/// إشارات مرجعية للدروس (Bookmarks)
+model Bookmark {
+  id        String   @id @default(cuid())
+  sessionId String
+  lessonId  String
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([sessionId, lessonId])
+  @@index([sessionId])
 }

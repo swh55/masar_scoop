@@ -505,3 +505,115 @@ Task: مراجعة وإضافة مكافأة تحدّي يومي ×2 وتفاص�
 7. **[منخفض]** إضافة صفحة بحث عامة عن كل الدروس
 8. **[منخفض]** إضافة keyboard shortcuts (J/K للتنقل بين الدروس)
 
+
+---
+
+## Task ID: 6
+Agent: Z.ai Code (cron review round 5)
+Task: مراجعة وإضافة إشارات مرجعية واحتفال رفع المستوى واختصارات لوحة المفاتيح
+
+### الحالة الحالية للمشروع (تقييم)
+- ✅ المشروع مستقر ويعمل على المنفذ 3000
+- ✅ `bun run lint` يجتاز بدون أخطاء
+- ✅ XP system يعمل (465 XP, Level 3 "متمرّس")
+- ✅ 23 درسًا عبر 6 مسارات
+- ✅ نظام التحدّي اليومي مع ×2 XP bonus يعمل
+- ✅ لا أخطاء في سجل الـ dev server
+
+### الأهداف المنجزة في هذه الجولة
+
+#### 1. الإشارات المرجعية للدروس (Bookmarks)
+- **قاعدة البيانات**: إضافة `Bookmark` model (sessionId + lessonId + createdAt) مع علاقة `bookmarks` على `Lesson`
+- **API `/api/bookmarks`**:
+  - GET: يجلب كل الإشارات المرجعية للمستخدم مع تفاصيل الدرس
+  - POST: toggle (يضيف/يحذف) — idempotent عبر `@@unique([sessionId, lessonId])`
+- **`useBookmarks` hook** — مع optimistic updates:
+  - `bookmarkIds` قائمة IDs
+  - `isBookmarked(lessonId)` للتحقق
+  - `toggle(lessonId)` للإضافة/الحذف
+  - `isToggling` لحالة التحميل
+- **`BookmarkButton` component** — زر مع animation:
+  - متغيران: `icon` (في صفحة الدرس) و `button` (مكان آخر)
+  - Spring animation عند التبديل
+  - أيقونة `BookmarkCheck` للإشارة المحفوظة
+  - Toast تأكيد: "أُضيف إلى الإشارات المرجعية" / "أُزيل من الإشارات المرجعية"
+- **`BookmarksView`** — صفحة كاملة:
+  - Empty state جذاب مع دعوة للتصفّح
+  - قائمة الدروس المحفوظة مع track color strip + track icon + title + duration
+  - زر إزالة سريع لكل درس
+  - animations staggered
+- **Header badge**: عداد على زر المحفوظات في الـ Header (خلفية amber، رقم العدد)
+
+#### 2. احتفال رفع المستوى (Level-Up Celebration)
+- **`confetti.tsx`** — مكونان:
+  - `ConfettiBurst` — انفجار ألوان (50-80 قطعة):
+    - ألوان متعددة (emerald, amber, violet, pink, cyan, rose, yellow)
+    - emojis عشوائية (🎉 🎊 ✨ ⭐ 🏆 ⚡ 🔥 💫)
+    - حركات Framer Motion مع دوران + سقوط
+    - delay + duration عشوائي لكل قطعة
+  - `LevelUpCelebration` — overlay كامل الشاشة:
+    - خلفية سوداء شفافة + backdrop blur
+    - emoji 🎊 كبير بحركة اهتزاز
+    - "رفع المستوى!" بنص متدرّج (amber → orange → rose)
+    - رقم المستوى + العنوان
+    - زر "متابعة التعلّم 🚀"
+- **`useLevelUpTracker` hook** — يتتبّع تغيّر المستوى:
+  - يفحص XP كل 5 ثوانٍ
+  - يقارن مع المستوى السابق (ref)
+  - يُطلق `leveledUp = true` عند زيادة المستوى
+  - `dismissLevelUp` لإعادة التعيين
+- **مدمج في page.tsx** — يظهر تلقائيًا عند رفع المستوى
+
+#### 3. اختصارات لوحة المفاتيح
+- **`use-keyboard-shortcuts` hook** — يسمع keydown على window:
+  - `J` / `H`: الصفحة الرئيسية
+  - `K` / `P`: تقدّمي
+  - `B`: المحفوظات
+  - `T` / `A`: الإنجازات
+  - يتجاهل الكتابة في inputs/textareas
+  - يتجاهل المعدّلات (Ctrl/Cmd/Alt)
+- **عرض الاختصارات في الـ Footer** — قسم جديد "اختصارات لوحة المفاتيح":
+  - 4 اختصارات مع kbd styling (J, K, B, T)
+  - تصميم neat مع border + bg-muted
+
+#### 4. تحسين الـ Bookmark UX
+- تمييز الـ bookmark في الـ Header:
+  - زر مع أيقونة Bookmark
+  - badge عدّاد (amber background, white text)
+  - tooltip "الإشارات المرجعية"
+- في الـ LessonView:
+  - زر bookmark في hero بجانب العنوان
+  - spring animation عند التبديل
+  - toast تأكيد مع عنوان الدرس
+
+### نتائج التحقق (QA via agent-browser)
+- ✅ `bun run lint` يجتاز بدون أخطاء
+- ✅ bookmarks API تعمل (GET + POST toggle)
+- ✅ زر bookmark يظهر في صفحة الدرس
+- ✅ النقر على زر bookmark يضيفه + toast "أُضيف"
+- ✅ العداد في الـ Header يظهر (1 بعد إضافة إشارة)
+- ✅ صفحة المحفوظات تعرض الدرس المحفوظ
+- ✅ زر الإزالة في صفحة المحفوظات يعمل
+- ✅ empty state جذاب عند عدم وجود إشارات
+- ✅ اختصارات لوحة المفاتيح تعمل:
+  - `B` → صفحة المحفوظات ✅
+  - `K` → صفحة التقدّم ✅
+  - `J` → الصفحة الرئيسية ✅
+- ✅ الاختصارات تظهر في الـ Footer
+- ✅ Level-up celebration component مركّب و جاهز
+- ✅ لا أخطاء في سجل الـ dev server
+
+### مخاطر/أمور غير محلولة
+- **Level-up celebration**: لا يمكن اختباره بالكامل دون ربح XP كافٍ لرفع المستوى. المكون مركّب وجاهز للعمل التلقائي.
+- **Prisma client caching**: عند إضافة `Bookmark` model، احتاج إعادة تشغيل dev server لتحميل Prisma Client الجديد (تم الحل).
+
+### توصيات للمرحلة القادمة (الأولويات)
+1. **[عالٍ]** إضافة "الدرس التالي الموصى به" بناءً على تقدّم المستخدم (smart suggestion)
+2. **[عال]** إضافة محرّك بحث عام عن كل الدروس (بحث في المحتوى)
+3. **[متوسط]** إضافة "ملخص المسار" عند إكمال مسار (review page)
+4. **[متوسط]** إضافة شهادة إكمال مسار (certificate)
+5. **[متوسط]** إضافة وضع تركيز (focus mode) للقراءة
+6. **[منخفض]** إضافة دعم تعدد اللغات (عربي/إنجليزي)
+7. **[منخفض]** إضافة تصدير/استيراد التقدّم (JSON)
+8. **[منخفض]** إضافة PWA support للعمل offline
+
