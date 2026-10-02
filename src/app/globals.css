@@ -142,6 +142,48 @@
   }
 }
 
+/* Print styles — for certificate PDF export */
+@media print {
+  /* Hide everything except the certificate */
+  body * {
+    visibility: hidden;
+  }
+  /* Show the certificate modal and its children */
+  .certificate-print-area,
+  .certificate-print-area * {
+    visibility: visible;
+  }
+  /* Position the certificate at the top of the page */
+  .certificate-print-area {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  /* Force light theme for printing */
+  html {
+    background: white !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  /* Avoid page breaks inside certificate */
+  .certificate-print-area,
+  .certificate-print-area * {
+    page-break-inside: avoid;
+  }
+  @page {
+    margin: 1cm;
+  }
+}
+
+
 @layer utilities {
   /* Track color helpers (since we store color as a string) */
   .track-sky { --track-color: oklch(0.62 0.18 230); }

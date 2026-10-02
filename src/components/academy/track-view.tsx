@@ -12,6 +12,7 @@ import {
   Trophy,
   Lock,
   Sparkles,
+  Award,
 } from "lucide-react";
 import { useUI } from "@/lib/store";
 import { useSessionId } from "@/hooks/use-session-id";
@@ -66,7 +67,7 @@ function useSessionIdLocal() {
 }
 
 export function TrackView({ trackId }: { trackId: string }) {
-  const { goHome, openLesson } = useUI();
+  const { goHome, openLesson, openCertificate } = useUI();
   const sessionId = useSessionIdLocal();
 
   const { data: track, isLoading } = useQuery<TrackDetail>({
@@ -181,9 +182,18 @@ export function TrackView({ trackId }: { trackId: string }) {
               )}
 
               {isComplete && (
-                <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-100 dark:bg-emerald-500/15 px-4 py-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-400">
-                  <Trophy className="h-4 w-4" />
-                  مكتمل! أحسنت
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 dark:bg-emerald-500/15 px-4 py-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                    <Trophy className="h-4 w-4" />
+                    مكتمل! أحسنت
+                  </div>
+                  <button
+                    onClick={() => openCertificate(track.id)}
+                    className="inline-flex items-center gap-2 rounded-full bg-amber-100 dark:bg-amber-500/15 px-4 py-1.5 text-sm font-medium text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-500/25 transition-colors"
+                  >
+                    <Award className="h-4 w-4" />
+                    عرض الشهادة
+                  </button>
                 </div>
               )}
             </div>

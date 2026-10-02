@@ -21,6 +21,9 @@ type UIState = {
   openBookmarks: () => void;
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
+  certificateTrackId: string | null;
+  openCertificate: (trackId: string) => void;
+  closeCertificate: () => void;
 };
 
 export const useUI = create<UIState>()(
@@ -39,6 +42,9 @@ export const useUI = create<UIState>()(
         set({ view: { type: "bookmarks" }, sidebarOpen: false }),
       sidebarOpen: false,
       setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
+      certificateTrackId: null,
+      openCertificate: (trackId) => set({ certificateTrackId: trackId }),
+      closeCertificate: () => set({ certificateTrackId: null }),
     }),
     {
       name: "academy-ui",

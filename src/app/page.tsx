@@ -16,6 +16,7 @@ import { BookmarksView } from "@/components/academy/bookmarks-view";
 import { OnboardingModal } from "@/components/academy/onboarding-modal";
 import { LevelUpCelebration } from "@/components/academy/confetti";
 import { GlobalSearch } from "@/components/academy/global-search";
+import { CertificateModal } from "@/components/academy/certificate";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,7 +29,7 @@ const queryClient = new QueryClient({
 });
 
 function AcademyApp() {
-  const { view } = useUI();
+  const { view, certificateTrackId, closeCertificate } = useUI();
   const { level, levelTitle, leveledUp, dismissLevelUp } = useLevelUpTracker();
   useKeyboardShortcuts();
 
@@ -51,6 +52,10 @@ function AcademyApp() {
       <Footer />
       <OnboardingModal />
       <GlobalSearch />
+      <CertificateModal
+        trackId={certificateTrackId}
+        onClose={closeCertificate}
+      />
       <LevelUpCelebration
         level={level}
         levelTitle={levelTitle}

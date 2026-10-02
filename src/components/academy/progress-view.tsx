@@ -20,6 +20,7 @@ import { TrackIcon } from "./track-icon";
 import { XPCard } from "./xp-indicator";
 import { ActivityHeatmap } from "./activity-heatmap";
 import { LeaderboardCard } from "./leaderboard-card";
+import { CertificateList } from "./certificate";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -254,6 +255,11 @@ export function ProgressView() {
       {/* Leaderboard */}
       <div className="mb-6">
         <LeaderboardCard />
+      </div>
+
+      {/* Certificates */}
+      <div className="mb-6">
+        <CertificateList />
       </div>
 
       {/* Quick links */}
