@@ -1,7 +1,8 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
   Clock,
@@ -14,6 +15,10 @@ import {
   CheckCircle2,
   Circle,
   TrendingUp,
+  Search,
+  Filter,
+  X,
+  PlayCircle,
 } from "lucide-react";
 import { useUI } from "@/lib/store";
 import { useSessionId } from "@/hooks/use-session-id";
@@ -74,6 +79,10 @@ export function HomeView() {
   const { openTrack } = useUI();
   const sessionId = useSessionIdLocal();
 
+  // Search & filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [levelFilter, setLevelFilter] = useState<"all" | "beginner" | "intermediate" | "advanced">("all");
+
   const { data: tracks, isLoading: tracksLoading } = useQuery<TrackList[]>({
     queryKey: ["tracks"],
     queryFn: () => fetch("/api/tracks").then((r) => r.json()),
@@ -93,11 +102,52 @@ export function HomeView() {
   const overallPercent =
     totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
+  // Filter tracks based on search query and level
+  const filteredTracks = useMemo(() => {
+    if (!tracks) return [];
+    const q = searchQuery.trim().toLowerCase();
+    return tracks.filter((t) => {
+      const matchesSearch =
+        !q ||
+        t.title.toLowerCase().includes(q) ||
+        t.description.toLowerCase().includes(q) ||
+        t.level.toLowerCase().includes(q);
+      const matchesLevel = levelFilter === "all" || t.level === levelFilter;
+      return matchesSearch && matchesLevel;
+    });
+  }, [tracks, searchQuery, levelFilter]);
+
+  const hasFilters = searchQuery.trim() !== "" || levelFilter !== "all";
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setLevelFilter("all");
+  };
+
   return (
     <div>
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-hero">
         <div className="absolute inset-0 bg-grid opacity-40" />
+        {/* Floating decorative blobs */}
+        <motion.div
+          aria-hidden
+          className="absolute top-10 -start-20 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl"
+          animate={{
+            x: [0, 30, 0],
+            y: [0, -20, 0],
+          }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          aria-hidden
+          className="absolute top-32 -end-20 h-80 w-80 rounded-full bg-amber-500/10 blur-3xl"
+          animate={{
+            x: [0, -25, 0],
+            y: [0, 25, 0],
+          }}
+          transition={{ duration: 14, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+        />
         <div className="container relative mx-auto px-4 sm:px-6 pt-16 pb-20 sm:pt-24 sm:pb-28">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
@@ -185,37 +235,84 @@ export function HomeView() {
         <div className="relative h-px bg-border" />
       </section>
 
-      {/* Overall progress (only if user has any) */}
-      {progress && progress.stats.totalLessonsCompleted > 0 && (
-        <section className="container mx-auto px-4 sm:px-6 -mt-8 relative z-10">
-          <Card className="p-6 border-primary/20 shadow-lg">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <TrendingUp className="h-6 w-6" />
+      {/* Overall progress + Continue learning (only if user has any) */}
+      {progress && progress.stats.totalLessonsCompleted > 0 && (() => {
+        // Find most recently opened in-progress track
+        const inProgress = progress.trackProgress
+          .filter((t) => t.percent < 100)
+          .sort((a, b) => {
+            const da = a.lastOpenedAt ? new Date(a.lastOpenedAt).getTime() : 0;
+            const db = b.lastOpenedAt ? new Date(b.lastOpenedAt).getTime() : 0;
+            return db - da;
+          })[0];
+        const trackMeta = tracks?.find((t) => t.id === inProgress?.trackId);
+
+        return (
+          <section className="container mx-auto px-4 sm:px-6 -mt-8 relative z-10">
+            <Card className="overflow-hidden border-primary/20 shadow-xl">
+              <div className="absolute inset-0 bg-gradient-to-l from-primary/5 via-transparent to-transparent" />
+              <div className="relative p-6 sm:p-7">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div className="absolute inset-0 rounded-2xl bg-primary/20 blur-md" />
+                      <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/20">
+                        <TrendingUp className="h-7 w-7" />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-xl mb-1">رحلة تعلّمك</h3>
+                      <p className="text-sm text-muted-foreground">
+                        أكملت{" "}
+                        <span className="font-bold text-primary">
+                          {completedLessons}
+                        </span>{" "}
+                        من {totalLessons} درس
+                      </p>
+                    </div>
+                  </div>
+                  <div className="w-full lg:w-64">
+                    <div className="flex items-center justify-between text-sm mb-2">
+                      <span className="text-muted-foreground">الإنجاز الكلي</span>
+                      <span className="font-bold text-primary text-base">
+                        {overallPercent}%
+                      </span>
+                    </div>
+                    <Progress value={overallPercent} className="h-2.5" />
+                  </div>
+                  {inProgress && trackMeta && (
+                    <Button
+                      onClick={() => openTrack(trackMeta.id)}
+                      size="lg"
+                      className="gap-2 w-full lg:w-auto shadow-lg shadow-primary/20"
+                    >
+                      <PlayCircle className="h-5 w-5" />
+                      تابع التعلّم
+                      <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
-                <div>
-                  <h3 className="font-bold text-lg">رحلة تعلّمك</h3>
-                  <p className="text-sm text-muted-foreground">
-                    أكملت {completedLessons} من {totalLessons} درس
-                  </p>
-                </div>
+                {inProgress && trackMeta && (
+                  <div className="mt-4 pt-4 border-t border-border/60 flex items-center gap-3 text-sm">
+                    <span className={cn("flex h-8 w-8 items-center justify-center rounded-lg bg-track/10 text-track ring-1 ring-track/20", `track-${trackMeta.color}`)}>
+                      <TrackIcon name={trackMeta.icon} className="h-4 w-4" />
+                    </span>
+                    <div className="flex-1">
+                      <span className="text-muted-foreground">آخر مسار: </span>
+                      <span className="font-medium">{trackMeta.title}</span>
+                      <span className="text-muted-foreground"> — {inProgress.percent}% مكتمل</span>
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="w-full sm:w-64">
-                <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-muted-foreground">الإنجاز الكلي</span>
-                  <span className="font-bold text-primary">{overallPercent}%</span>
-                </div>
-                <Progress value={overallPercent} className="h-2.5" />
-              </div>
-            </div>
-          </Card>
-        </section>
-      )}
+            </Card>
+          </section>
+        );
+      })()}
 
       {/* Tracks grid */}
       <section id="tracks" className="container mx-auto px-4 sm:px-6 py-16 sm:py-20">
-        <div className="mb-10 text-center">
+        <div className="mb-8 text-center">
           <h2 className="text-3xl sm:text-4xl font-extrabold mb-3">
             المسارات التعليمية
           </h2>
@@ -223,6 +320,47 @@ export function HomeView() {
             اختر مسارًا لتبدأ رحلتك. كل مسار يبني على السابق، فابدأ من الأعلى إن
             كنت جديدًا على تطوير الويب.
           </p>
+        </div>
+
+        {/* Search & Filter Bar */}
+        <div className="mb-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="relative flex-1 max-w-md mx-auto sm:mx-0 w-full">
+            <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="ابحث عن مسار... (مثل: React، Prisma، مبتدئ)"
+              className="w-full rounded-full border border-border bg-card ps-10 pe-10 py-2.5 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/70 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none"
+              aria-label="بحث في المسارات"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="مسح البحث"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 justify-center sm:justify-start">
+            <Filter className="h-4 w-4 text-muted-foreground hidden sm:block" />
+            {(["all", "beginner", "intermediate", "advanced"] as const).map((lv) => (
+              <button
+                key={lv}
+                onClick={() => setLevelFilter(lv)}
+                className={cn(
+                  "rounded-full px-3.5 py-1.5 text-xs font-medium transition-all border",
+                  levelFilter === lv
+                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                    : "bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
+                )}
+              >
+                {lv === "all" ? "الكل" : LEVEL_LABEL[lv]}
+              </button>
+            ))}
+          </div>
         </div>
 
         {tracksLoading ? (
@@ -234,22 +372,42 @@ export function HomeView() {
               />
             ))}
           </div>
+        ) : filteredTracks.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-muted mb-4">
+              <Search className="h-7 w-7 text-muted-foreground" />
+            </div>
+            <h3 className="font-bold text-lg mb-1">لا نتائج</h3>
+            <p className="text-sm text-muted-foreground mb-5">
+              {hasFilters
+                ? "لم نجد مسارات تطابق بحثك. جرّب تعديل الفلاتر."
+                : "لا توجد مسارات متاحة حاليًا."}
+            </p>
+            {hasFilters && (
+              <Button onClick={clearFilters} variant="outline" className="gap-2">
+                <X className="h-4 w-4" />
+                مسح الفلاتر
+              </Button>
+            )}
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tracks?.map((track, idx) => {
-              const tp = progress?.trackProgress.find(
-                (p) => p.trackId === track.id
-              );
-              return (
-                <TrackCard
-                  key={track.id}
-                  track={track}
-                  percent={tp?.percent ?? 0}
-                  index={idx}
-                  onOpen={() => openTrack(track.id)}
-                />
-              );
-            })}
+            <AnimatePresence mode="popLayout">
+              {filteredTracks.map((track, idx) => {
+                const tp = progress?.trackProgress.find(
+                  (p) => p.trackId === track.id
+                );
+                return (
+                  <TrackCard
+                    key={track.id}
+                    track={track}
+                    percent={tp?.percent ?? 0}
+                    index={idx}
+                    onOpen={() => openTrack(track.id)}
+                  />
+                );
+              })}
+            </AnimatePresence>
           </div>
         )}
       </section>
@@ -334,9 +492,11 @@ function TrackCard({
   const completed = percent >= 100;
   return (
     <motion.button
+      layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.06 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.3, delay: index * 0.04 }}
       onClick={onOpen}
       className={cn(
         "group relative text-start overflow-hidden rounded-2xl border border-border/60 bg-card p-6 transition-all",

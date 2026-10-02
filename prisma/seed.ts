@@ -1965,6 +1965,217 @@ export async function getDashboardStats() {
           ],
         },
       },
+      {
+        slug: "prisma-advanced",
+        title: "ميزات متقدمة: Migrations، Indexes، و Raw SQL",
+        summary: "إدارة تطور المخطط، تحسين الأداء، و SQL الخام عند الحاجة.",
+        content: `# ميزات Prisma المتقدمة
+
+## Migrations (الترحيلات)
+
+بدل \`db:push\` (الذي يطبّق التغييرات مباشرة)، استخدم migrations لبيئات الإنتاج:
+
+\`\`\`bash
+# 1. أنشئ migration من تغيير في schema
+bun run db:migrate -- --name add_user_profile
+
+# 2. يُنشئ ملف SQL في prisma/migrations/<timestamp>_add_user_profile/
+#    migration.sql يحتوي ALTER TABLE ...
+
+# 3. يطبّق على قاعدة البيانات
+bun run db:migrate
+\`\`\`
+
+مزايا:
+- **إنتاج آمن** — يُراجع SQL قبل التطبيق.
+- **تراجع** — migrations قابلة للتراجع.
+- **مشاركة** — أعضاء الفريق يحصلون على نفس مخطط قاعدة البيانات.
+
+## Indexes (الفهارس)
+
+لتسريع الاستعلامات على أعمدة معينة:
+
+\`\`\`prisma
+model User {
+  id       String  @id
+  email    String  @unique  // ← فهرس فريد تلقائيًا
+  username String  @unique
+  country  String
+  age      Int
+
+  @@index([country])        // فهرس على country لتسريع البحث
+  @@index([country, age])   // فهرس مركّب
+}
+\`\`\`
+
+القاعدة: أضف فهارس للأعمدة المستخدمة كثيرًا في \`where\` أو \`orderBy\`.
+
+## Raw SQL (SQL الخام)
+
+عندما لا تكفي Prisma، استخدم SQL مباشرة:
+
+\`\`\`ts
+// queryRaw — للاستعلامات التي تُرجع صفوف
+const users = await db.$queryRaw\`
+  SELECT * FROM User WHERE age > \${18} ORDER BY name
+\`\`;
+
+// executeRaw — للاستعلامات التي تعدّل (UPDATE/DELETE/INSERT)
+const result = await db.$executeRaw\`
+  UPDATE User SET lastSeen = NOW() WHERE id = \${userId}
+\`\`;
+\`\`\`
+
+> ⚠️ استخدم المعاملات المسمّاة (\`\${var}\`) دائمًا — Prisma يحمي من SQL injection.
+
+## Transactions
+
+\`\`\`ts
+// 1. متتالية (تُنفّذ كل شيء أو لا شيء)
+const [user, profile] = await db.$transaction([
+  db.user.create({ data: { email: "a@b.com" } }),
+  db.profile.create({ data: { userId: "x", bio: "..." } }),
+]);
+
+// 2. تفاعلية (مع منطق في الوسط)
+const result = await db.$transaction(async (tx) => {
+  const user = await tx.user.create({ data: { email: "a@b.com" } });
+  await tx.profile.create({ data: { userId: user.id } });
+  await tx.auditLog.create({ data: { action: "signup", userId: user.id } });
+  return user;
+});
+
+// 3. timeout طويل للمهام الثقيلة
+await db.$transaction(async (tx) => {
+  // ... عمليات كثيرة
+}, { timeout: 30000, maxWait: 10000 });
+\`\`\`
+
+## Middleware / Extensions
+
+لتعديل السلوك قبل/بعد العمليات:
+
+\`\`\`ts
+const prisma = new PrismaClient().$extends({
+  query: {
+    user: {
+      // قبل كل find على User
+      async findMany({ model, operation, args, query }) {
+        // أضف فلترًا افتراضيًا
+        args.where = { ...args.where, deletedAt: null };
+        return query(args);
+      },
+    },
+  },
+});
+\`\`\`
+
+## أدوات مساعدة
+
+\`\`\`ts
+// $connect / $disconnect
+await db.$connect();
+await db.$disconnect();
+
+// $on — استمع لأحداث
+db.$on("query", (e) => {
+  console.log("Query:", e.query);
+  console.log("Duration:", e.duration + "ms");
+});
+
+// $use — middleware قديم (مُهمَل في v6)
+\`\`\`
+
+## $accelerate (اختياري)
+
+خدمة caching من Prisma للتطبيقات serverless:
+
+\`\`\`ts
+const prisma = new PrismaClient({
+  // مفتاح accelerate من prisma.io/accelerate
+});
+\`\`\`
+
+## نصائح للأداء
+
+1. **استخدم select** بدل include عندما لا تحتاج كل الحقول.
+2. **تجنب الاستعلامات N+1** — استخدم include بدل حلقة من findUnique.
+3. **فهرس الأعمدة** المستخدمة في where/orderBy.
+4. **paginate** بدل جلب كل شيء.
+
+\`\`\`ts
+// ❌ N+1
+for (const u of users) {
+  const posts = await db.post.findMany({ where: { authorId: u.id } });
+}
+
+// ✅ استعلام واحد
+const users = await db.user.findMany({
+  include: { posts: true },
+});
+\`\`\``,
+        codeExample: `import { db } from "@/lib/db";
+
+// مثال: نقل أموال بين حسابين في معاملة
+export async function transfer(fromId: string, toId: string, amount: number) {
+  return db.$transaction(async (tx) => {
+    const from = await tx.account.findUniqueOrThrow({ where: { id: fromId } });
+    if (from.balance < amount) {
+      throw new Error("الرصيد غير كافٍ");
+    }
+
+    await tx.account.update({
+      where: { id: fromId },
+      data: { balance: { decrement: amount } },
+    });
+    await tx.account.update({
+      where: { id: toId },
+      data: { balance: { increment: amount } },
+    });
+
+    await tx.transaction.create({
+      data: { fromId, toId, amount },
+    });
+
+    return { success: true };
+  });
+}`,
+        codeLanguage: "ts",
+        order: 3,
+        duration: 25,
+        quiz: {
+          title: "اختبار: Prisma المتقدمة",
+          questions: [
+            {
+              text: "متى تستخدم migrations بدل db:push؟",
+              correctIndex: 2,
+              explanation:
+                "migrations أنسب لبيئات الإنتاج لأنها قابلة للمراجعة والتراجع.",
+              choices: [
+                { text: "دائمًا" },
+                { text: "في بيئة التطوير فقط" },
+                {
+                  text: "في بيئة الإنتاج ومشاريع الفريق",
+                },
+                { text: "لا فرق بينهما" },
+              ],
+            },
+            {
+              text: "كيف تتجنب مشكلة N+1؟",
+              correctIndex: 1,
+              explanation: "استخدم include لجلب العلاقات في استعلام واحد.",
+              choices: [
+                { text: "حلقة من findUnique" },
+                {
+                  text: "استخدم include بدل حلقة من الاستعلامات",
+                },
+                { text: "raw SQL" },
+                { text: "db:push" },
+              ],
+            },
+          ],
+        },
+      },
     ],
   },
 
@@ -2177,6 +2388,422 @@ function FavButton({ id }: { id: string }) {
                 { text: "persist() middleware" },
                 { text: "save: true option" },
                 { text: "لا يدعم Zustand ذلك" },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        slug: "zustand-middleware",
+        title: "الـ Middleware: persist و immer",
+        summary: "حفظ الحالة، تعديل غير قابل للتغيير، والـ devtools.",
+        content: `# Middleware في Zustand
+
+الـ Middleware دوال تُلتف حول الـ store لإضافة سلوكيات. Zustand يأتي بثلاثة مهمة:
+
+## 1. persist — الحفظ التلقائي
+
+يحفظ الحالة في localStorage (أو أي storage):
+
+\`\`\`ts
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+
+type SettingsState = {
+  theme: "light" | "dark";
+  lang: "ar" | "en";
+  setTheme: (t: SettingsState["theme"]) => void;
+};
+
+export const useSettings = create<SettingsState>()(
+  persist(
+    (set) => ({
+      theme: "light",
+      lang: "ar",
+      setTheme: (theme) => set({ theme }),
+    }),
+    {
+      name: "academy-settings", // مفتاح localStorage
+      // partialize: حفظ جزء فقط من الحالة
+      partialize: (state) => ({ theme: state.theme, lang: state.lang }),
+    }
+  )
+);
+\`\`\`
+
+### تخزين مخصّص (مثلاً sessionStorage)
+
+\`\`\`ts
+persist(
+  (set) => ({ ... }),
+  {
+    name: "x",
+    storage: createJSONStorage(() => sessionStorage),
+  }
+)
+\`\`\`
+
+## 2. immer — تحديث غير قابل للتغيير
+
+بدون immer، يجب الحذر عند تحديث كائنات متداخلة:
+
+\`\`\`ts
+// بدون immer — متعب
+set((s) => ({
+  user: { ...s.user, profile: { ...s.user.profile, name: "جديد" } },
+}));
+
+// مع immer — مباشر
+set((s) => {
+  s.user.profile.name = "جديد"; // ✅ تعديل مباشر
+});
+\`\`\`
+
+الاستخدام:
+
+\`\`\`ts
+import { immer } from "zustand/middleware/immer";
+
+export const useStore = create<State>()(
+  immer((set) => ({
+    user: { profile: { name: "" } },
+    setName: (name) => set((s) => { s.user.profile.name = name; }),
+  }))
+);
+\`\`\`
+
+## 3. devtools — لتصحيح الأخطاء
+
+\`\`\`ts
+import { devtools } from "zustand/middleware";
+
+export const useStore = create<State>()(
+  devtools(
+    (set) => ({ ... }),
+    { name: "AcademyStore" } // يظهر في Redux DevTools
+  )
+);
+\`\`\`
+
+يدمج مع إضافة Redux DevTools لمتصفحك — تاريخ كل تحديث، تشغيل عكسي، إلخ.
+
+## ترتيب الـ Middleware
+
+ترتيب التفاف الـ middleware مهم (من الخارج للداخل):
+
+\`\`\`ts
+create<State>()(
+  devtools(           // الأبعد
+    persist(           // الأوسط
+      immer((set) => ({ ... })),  // الأقرب
+      { name: "x" }
+    ),
+    { name: "X" }
+  )
+);
+\`\`\`
+
+## middleware مخصّص
+
+\`\`\`ts
+const logger = (config) => (set, get, api) =>
+  config(
+    (...args) => {
+      console.log("قبل:", get());
+      set(...args);
+      console.log("بعد:", get());
+    },
+    get,
+    api
+  );
+
+export const useStore = create<State>()(logger((set) => ({ ... })));
+\`\`\`
+
+مفيد جدًا للتصحيح في بيئة التطوير.`,
+        codeExample: `import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+
+type CartState = {
+  items: { id: string; qty: number }[];
+  add: (id: string) => void;
+  remove: (id: string) => void;
+  clear: () => void;
+};
+
+export const useCart = create<CartState>()(
+  persist(
+    (set) => ({
+      items: [],
+      add: (id) =>
+        set((s) => {
+          const exists = s.items.find((i) => i.id === id);
+          if (exists) {
+            return {
+              items: s.items.map((i) =>
+                i.id === id ? { ...i, qty: i.qty + 1 } : i
+              ),
+            };
+          }
+          return { items: [...s.items, { id, qty: 1 }] };
+        }),
+      remove: (id) =>
+        set((s) => ({ items: s.items.filter((i) => i.id !== id) })),
+      clear: () => set({ items: [] }),
+    }),
+    {
+      name: "academy-cart",
+      storage: createJSONStorage(() => localStorage),
+    }
+  )
+);`,
+        codeLanguage: "ts",
+        order: 2,
+        duration: 20,
+        quiz: {
+          title: "اختبار: Zustand Middleware",
+          questions: [
+            {
+              text: "ماذا يفعل middleware persist؟",
+              correctIndex: 1,
+              explanation: "يحفظ الحالة في localStorage تلقائيًا.",
+              choices: [
+                { text: "يؤجل التحديثات" },
+                { text: "يحفظ الحالة في localStorage" },
+                { text: "يسرّع الأداء" },
+                { text: "يشفّر الحالة" },
+              ],
+            },
+            {
+              text: "ما فائدة immer middleware؟",
+              correctIndex: 2,
+              explanation: "يتيح تعديل الحالة بشكل مباشر (mutable) بكود أنظف.",
+              choices: [
+                { text: "يضيف أنواعًا" },
+                { text: "يحفظ الحالة" },
+                {
+                  text: "يتيح تحديث الحالة بكود أبسط (mutable)",
+                },
+                { text: "ينشئ logs" },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        slug: "zustand-patterns",
+        title: "أنماط متقدمة: Slices و Context",
+        summary: "تنظيم المتاجر الكبيرة ودمجها مع React Context.",
+        content: `# أنماط متقدمة في Zustand
+
+## تقسيم المتجر (Store Slices)
+
+للمتاجر الكبيرة، قسّمها إلى slices وأدمجها:
+
+\`\`\`ts
+// stores/userSlice.ts
+export const createUserSlice: StateCreator<RootState, [], [], UserSlice> = (set) => ({
+  user: null,
+  login: (user) => set({ user }),
+  logout: () => set({ user: null }),
+});
+
+// stores/cartSlice.ts
+export const createCartSlice: StateCreator<RootState, [], [], CartSlice> = (set) => ({
+  cart: [],
+  addToCart: (item) => set((s) => ({ cart: [...s.cart, item] })),
+});
+
+// stores/index.ts — ادمج الكل
+import { create } from "zustand";
+import { createUserSlice } from "./userSlice";
+import { createCartSlice } from "./cartSlice";
+
+export const useStore = create<RootState>()((...a) => ({
+  ...createUserSlice(...a),
+  ...createCartSlice(...a),
+}));
+\`\`\`
+
+هذا يجعل الكود قابل للصيانة في المشاريع الكبيرة.
+
+## قراءة عبر Context (مشاركة متجر بين اختبارات)
+
+\`\`\`tsx
+// StoreContext.tsx
+import { createContext, useContext, useRef, type ReactNode } from "zustand";
+import { useStore as useDefaultStore } from "./index";
+
+type StoreApi = ReturnType<typeof useDefaultStore>;
+
+const StoreContext = createContext<StoreApi | null>(null);
+
+export function StoreProvider({
+  store,
+  children,
+}: {
+  store?: StoreApi;
+  children: ReactNode;
+}) {
+  const ref = useRef(store ?? useDefaultStore);
+  return (
+    <StoreContext.Provider value={ref.current}>
+      {children}
+    </StoreContext.Provider>
+  );
+}
+
+export function useStore() {
+  const api = useContext(StoreContext);
+  return api ?? useDefaultStore;
+}
+\`\`\`
+
+فائدة هذا النمط: تمرير نسخة مختلفة من المتجر في الاختبارات (testing).
+
+## محددات متقدمة (Advanced Selectors)
+
+\`\`\`tsx
+// محدد بإرجاع كائن جديد — يسبب إعادة تصيير دائمًا!
+const { user, cart } = useStore((s) => ({ user: s.user, cart: s.cart }));
+// ❌ مشكلة: كل render يُرجع مرجع جديد
+
+// الحل: useShallow
+import { useShallow } from "zustand/react/shallow";
+
+const { user, cart } = useStore(
+  useShallow((s) => ({ user: s.user, cart: s.cart }))
+);
+// ✅ يعيد التصيير فقط عند تغيّر فعلي
+\`\`\`
+
+## محدد مشتق (Derived State)
+
+\`\`\`ts
+// احسب عند القراءة
+const totalPrice = useStore((s) =>
+  s.cart.reduce((sum, i) => sum + i.price * i.qty, 0)
+);
+
+// أو احفظ النتيجة في المتجر
+const useStore = create((set, get) => ({
+  cart: [],
+  addToCart: (item) => {
+    set((s) => ({ cart: [...s.cart, item] }));
+    // احفظ الإجمالي
+    set({ total: get().cart.reduce((sum, i) => sum + i.price * i.qty, 0) });
+  },
+  total: 0,
+}));
+\`\`\`
+
+## تحديثات متفائلة (Optimistic)
+
+\`\`\`tsx
+function LikeButton({ postId }: { postId: string }) {
+  const updatePost = useStore((s) => s.updatePost);
+
+  const handleLike = async () => {
+    // 1. تحديث متفائل فورًا
+    updatePost(postId, { likes: currentLikes + 1 });
+    try {
+      // 2. إرسال للخادم
+      await fetch("/api/like", { method: "POST", body: JSON.stringify({ postId }) });
+    } catch {
+      // 3. تراجع عند الفشل
+      updatePost(postId, { likes: currentLikes });
+      toast.error("فشل، حاول مرة أخرى");
+    }
+  };
+}
+\`\`\`
+
+## تنظيف المتجر عند تسجيل الخروج
+
+\`\`\`ts
+export const useStore = create<State>()((set) => ({
+  user: null,
+  // ...
+  reset: () =>
+    set({
+      user: null,
+      cart: [],
+      // أعد كل شيء للحالة الابتدائية
+    }),
+}));
+
+// عند تسجيل الخروج
+useStore.getState().reset();
+\`\`\``,
+        codeExample: `// مثال: متجر بسلايس متعددة
+import { create } from "zustand";
+
+type UserSlice = {
+  user: { id: string; name: string } | null;
+  login: (u: UserSlice["user"]) => void;
+};
+
+type UISlice = {
+  sidebarOpen: boolean;
+  toggleSidebar: () => void;
+};
+
+type Store = UserSlice & UISlice;
+
+const createUserSlice = (set: any) => ({
+  user: null,
+  login: (user: UserSlice["user"]) => set({ user }),
+});
+
+const createUISlice = (set: any) => ({
+  sidebarOpen: false,
+  toggleSidebar: () =>
+    set((s: Store) => ({ sidebarOpen: !s.sidebarOpen })),
+});
+
+export const useStore = create<Store>()((...a) => ({
+  ...createUserSlice(...a),
+  ...createUISlice(...a),
+}));
+
+// الاستخدام
+function Profile() {
+  const user = useStore((s) => s.user);
+  if (!user) return <p>غير مسجّل</p>;
+  return <p>مرحبًا {user.name}</p>;
+}`,
+        codeLanguage: "ts",
+        order: 3,
+        duration: 25,
+        quiz: {
+          title: "اختبار: أنماط Zustand",
+          questions: [
+            {
+              text: "ما فائدة تقسيم المتجر إلى slices؟",
+              correctIndex: 1,
+              explanation:
+                "تنظيم المتاجر الكبيرة إلى وحدات قابلة للصيانة.",
+              choices: [
+                { text: "يزيد الأداء" },
+                {
+                  text: "تنظيم الكود إلى وحدات قابلة للصيانة",
+                },
+                { text: "يقلل حجم الحزمة" },
+                { text: "يضيف أنواعًا" },
+              ],
+            },
+            {
+              text: "ماذا تفعل useShallow؟",
+              correctIndex: 2,
+              explanation:
+                "تمنع إعادة التصيير عند إرجاع كائن جديد لم يتغير فعليًا.",
+              choices: [
+                { text: "تنسخ المتجر" },
+                { text: "تنشئ slice" },
+                {
+                  text: "تمنع إعادة التصيير غير الضرورية للكائنات",
+                },
+                { text: "تحفظ في localStorage" },
               ],
             },
           ],

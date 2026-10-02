@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useUI } from "@/lib/store";
 import { useSessionId } from "@/hooks/use-session-id";
+import { useStreak } from "@/hooks/use-streak";
 import { TrackIcon } from "./track-icon";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +57,7 @@ function useSessionIdLocal() {
 export function ProgressView() {
   const { openTrack, openAchievements, goHome } = useUI();
   const sessionId = useSessionIdLocal();
+  const { streak, longest, totalActiveDays } = useStreak();
 
   const { data: progress } = useQuery<ProgressData>({
     queryKey: ["progress", sessionId],
@@ -103,7 +105,7 @@ export function ProgressView() {
       </motion.div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard
           icon={BookOpen}
           label="دروس مكتملة"
@@ -129,6 +131,43 @@ export function ProgressView() {
           color="violet"
         />
       </div>
+
+      {/* Streak banner */}
+      <Card className="mb-10 overflow-hidden relative border-amber-500/30">
+        <div className="absolute inset-0 bg-gradient-to-l from-amber-500/10 via-orange-500/5 to-transparent" />
+        <div className="absolute -top-8 -left-8 h-32 w-32 rounded-full bg-amber-500/20 blur-3xl" />
+        <div className="relative p-6 flex items-center gap-6">
+          <div className="relative shrink-0">
+            <div className="absolute inset-0 rounded-2xl bg-amber-500/30 blur-lg animate-pulse" />
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg">
+              <Flame className={streak >= 3 ? "h-8 w-8 animate-pulse" : "h-8 w-8"} />
+            </div>
+          </div>
+          <div className="flex-1">
+            <div className="flex items-baseline gap-2 mb-1">
+              <span className="text-4xl font-extrabold text-amber-600 dark:text-amber-400">
+                {streak}
+              </span>
+              <span className="text-lg font-bold text-muted-foreground">يوم متتالي</span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {streak === 0
+                ? "ابدأ اليوم لتفعيل سلسلتك!"
+                : streak === 1
+                ? "بداية رائعة! تابع غدًا لتحافظ على السلسلة 🔥"
+                : streak < 7
+                ? `سلسلة ممتازة! ${7 - streak} أيام للوصول لأسبوع كامل`
+                : `أنت في طار النخبة! سلسلة ${streak} يوم 🔥🔥`}
+            </p>
+          </div>
+          <div className="hidden sm:block text-center ps-6 border-s border-amber-500/20">
+            <div className="text-2xl font-bold">{longest}</div>
+            <div className="text-xs text-muted-foreground">أطول سلسلة</div>
+            <div className="mt-2 text-2xl font-bold">{totalActiveDays}</div>
+            <div className="text-xs text-muted-foreground">أيام نشطة</div>
+          </div>
+        </div>
+      </Card>
 
       {/* Tracks progress */}
       <Card className="p-6 mb-6">

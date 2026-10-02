@@ -19,6 +19,7 @@ import {
 import { useUI } from "@/lib/store";
 import { useSessionId } from "@/hooks/use-session-id";
 import { Markdown } from "./markdown";
+import { CodePlayground } from "./code-playground";
 import { TrackIcon } from "./track-icon";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -225,6 +226,22 @@ export function LessonView({ lessonId }: { lessonId: string }) {
             </div>
           </Card>
         )}
+
+        {/* Interactive code playground — only for runnable languages */}
+        {lesson.codeExample &&
+          ["ts", "tsx", "js", "jsx"].includes(lesson.codeLanguage ?? "") && (
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span>عدّل الكود وجرّبه مباشرة في المتصفح:</span>
+              </div>
+              <CodePlayground
+                initialCode={lesson.codeExample}
+                language={lesson.codeLanguage ?? "ts"}
+                title="محرر تفاعلي"
+              />
+            </div>
+          )}
 
         {/* Quiz */}
         {lesson.quiz && (

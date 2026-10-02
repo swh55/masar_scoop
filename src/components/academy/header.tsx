@@ -1,13 +1,16 @@
 "use client";
 
-import { GraduationCap, Menu, Trophy, BarChart3, Home } from "lucide-react";
+import { GraduationCap, Menu, Trophy, BarChart3, Home, Flame } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { useUI } from "@/lib/store";
+import { useStreak } from "@/hooks/use-streak";
 import { cn } from "@/lib/utils";
 
 export function Header() {
   const { view, goHome, openProgress, openAchievements, setSidebarOpen } = useUI();
+  const { streak } = useStreak();
 
   const isActive = (type: string) => view.type === type;
 
@@ -44,6 +47,22 @@ export function Header() {
         </div>
 
         <nav className="flex items-center gap-1">
+          {/* Streak indicator */}
+          <AnimatePresence>
+            {streak > 0 && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="hidden sm:flex items-center gap-1.5 rounded-full px-3 py-1 me-1 bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20"
+                title={`سلسلة ${streak} أيام متتالية!`}
+              >
+                <Flame className={cn("h-3.5 w-3.5", streak >= 3 && "animate-pulse")} />
+                <span className="text-xs font-bold">{streak}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <Button
             variant={isActive("home") ? "secondary" : "ghost"}
             size="sm"
