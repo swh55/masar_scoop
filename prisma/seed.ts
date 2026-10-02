@@ -1,0 +1,2322 @@
+/**
+ * Seed script for Programming Academy
+ * Populates tracks, lessons, and quizzes with rich educational content.
+ *
+ * Run with: `bun run db:seed`
+ */
+import { PrismaClient } from "@prisma/client";
+
+const db = new PrismaClient();
+
+type ChoiceInput = { text: string };
+type QuestionInput = {
+  text: string;
+  correctIndex: number;
+  explanation?: string;
+  choices: ChoiceInput[];
+};
+type LessonInput = {
+  slug: string;
+  title: string;
+  summary: string;
+  content: string;
+  codeExample?: string;
+  codeLanguage?: string;
+  order: number;
+  duration: number;
+  quiz?: {
+    title: string;
+    questions: QuestionInput[];
+  };
+};
+type TrackInput = {
+  slug: string;
+  title: string;
+  description: string;
+  color: string;
+  icon: string;
+  level: string;
+  order: number;
+  duration: number;
+  lessons: LessonInput[];
+};
+
+const tracks: TrackInput[] = [
+  // 1. TypeScript
+  {
+    slug: "typescript",
+    title: "TypeScript الأساسي",
+    description:
+      "تعلّم كتابة كود JavaScript بأمان تام باستخدام الأنواع الثابتة. الأساس الذي يبني عليه كل شيء.",
+    color: "sky",
+    icon: "FileCode2",
+    level: "beginner",
+    order: 1,
+    duration: 90,
+    lessons: [
+      {
+        slug: "ts-intro",
+        title: "ما هو TypeScript؟ ولماذا نستخدمه؟",
+        summary:
+          "مقدمة عن TypeScript ومزاياه على JavaScript التقليدية.",
+        content: `# ما هو TypeScript؟
+
+**TypeScript** هو إضافة فوق JavaScript تضيف نظام أنواع ثابت (static type system). صُمّم بواسطة Microsoft وهو اليوم اللغة الأساسية لتطوير تطبيقات الويب الحديثة.
+
+## لماذا نستخدمه؟
+
+1. **اكتشاف الأخطاء مبكرًا** — الأخطاء تُكتشف وقت الكتابة، لا وقت التشغيل.
+2. **توثيق ذاتي** — الأنواع تعمل كوثيقة واضحة للدوال والمكونات.
+3. **إكمال ذكي للكود** — محرر الكود يفهم بنية بياناتك بالكامل.
+4. **إعادة هيكلة آمنة** — تغيير اسم متغيّر لا يكسر الكود في مكان خفي.
+
+## مثال: JavaScript مقابل TypeScript
+
+في JavaScript قد يحدث خطأ صامت:
+
+\`\`\`js
+function addUser(user) {
+  console.log(user.namme); // خطأ إملائي! يطبع undefined
+}
+\`\`\`
+
+أما في TypeScript:
+
+\`\`\`ts
+type User = { name: string; age: number };
+
+function addUser(user: User) {
+  console.log(user.namme);
+  // ❌ Error: Property 'namme' does not exist on type 'User'.
+}
+\`\`\`
+
+## كيف يعمل؟
+
+TypeScript لا يعمل في المتصفح. بل يُترجَم (compile) إلى JavaScript قبل التشغيل. تسمى هذه العملية **transpilation**.
+
+\`\`\`bash
+tsc file.ts   # ينتج file.js
+\`\`\`
+
+## في مشروع Next.js
+
+Next.js يدعم TypeScript افتراضيًا. كل ملف \`.ts\` أو \`.tsx\` يُفحص تلقائيًا. كل ما عليك هو الكتابة!`,
+        codeExample: `// متغيّر بنوع صريح
+const username: string = "أحمد";
+const age: number = 25;
+const isActive: boolean = true;
+
+// مصفوفة
+const scores: number[] = [90, 85, 77];
+
+// دالة مع أنواع للمدخلات والمخرجات
+function greet(name: string): string {
+  return \`مرحبًا \${name}!\`;
+}
+
+console.log(greet(username));`,
+        codeLanguage: "ts",
+        order: 1,
+        duration: 12,
+        quiz: {
+          title: "اختبار: مقدمة TypeScript",
+          questions: [
+            {
+              text: "ما الفائدة الرئيسية لـ TypeScript؟",
+              correctIndex: 1,
+              explanation:
+                "الأكبر فائدة هي اكتشاف الأخطاء وقت الكتابة قبل التشغيل.",
+              choices: [
+                { text: "يجعل الكود أسرع في المتصفح" },
+                { text: "يكتشف الأخطاء وقت الكتابة قبل التشغيل" },
+                { text: "يضيف ميزات CSS جديدة" },
+                { text: "يستبدل HTML" },
+              ],
+            },
+            {
+              text: "هل يعمل TypeScript مباشرة في المتصفح؟",
+              correctIndex: 1,
+              explanation:
+                "TypeScript يُترجَم إلى JavaScript قبل التشغيل في المتصفح.",
+              choices: [
+                { text: "نعم، المتصفح يدعمه افتراضيًا" },
+                { text: "لا، يُترجَم إلى JavaScript أولًا" },
+                { text: "نعم، لكن فقط في Chrome" },
+                { text: "نعم، لكن يحتاج إضافة" },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        slug: "ts-types",
+        title: "الأنواع الأساسية والواجهات (Interfaces)",
+        summary: "string, number, boolean, arrays, type aliases, interfaces.",
+        content: `# الأنواع والواجهات في TypeScript
+
+الأنواع (Types) هي قلب TypeScript. تخبر المترجم عن شكل البيانات.
+
+## الأنواع الأساسية
+
+\`\`\`ts
+let name: string = "ليلى";
+let count: number = 42;
+let isOnline: boolean = true;
+let nothing: null = null;
+let maybe: undefined = undefined;
+\`\`\`
+
+## المصفوفات والـ Tuples
+
+\`\`\`ts
+const numbers: number[] = [1, 2, 3];
+const strings: Array<string> = ["a", "b"];
+
+// Tuple: مصفوفة بطول وأنواع ثابتة
+const pair: [string, number] = ["age", 30];
+\`\`\`
+
+## type aliases
+
+تعريف نوع مخصص:
+
+\`\`\`ts
+type UserID = string;
+type Point = { x: number; y: number };
+
+const id: UserID = "abc-123";
+const origin: Point = { x: 0, y: 0 };
+\`\`\`
+
+## Interfaces
+
+شائعة لوصف شكل كائن:
+
+\`\`\`ts
+interface User {
+  id: string;
+  name: string;
+  age?: number; // اختياري
+  readonly createdAt: Date; // للقراءة فقط
+}
+
+const u: User = {
+  id: "1",
+  name: "سارة",
+  createdAt: new Date(),
+};
+\`\`\`
+
+## type مقابل interface
+
+- \`type\` أكثر مرونة (Union, Intersection, Conditional).
+- \`interface\` أفضل للدمج (Declaration Merging) والكائنات.
+
+قاعدة بسيطة: استخدم \`interface\` للكائنات، و\`type\` للأنواع المركبة.`,
+        codeExample: `interface Product {
+  id: string;
+  name: string;
+  price: number;
+  tags?: string[];
+}
+
+function printProduct(p: Product) {
+  console.log(\`\${p.name}: $\${p.price}\`);
+}
+
+printProduct({
+  id: "p1",
+  name: "حاسوب محمول",
+  price: 1200,
+  tags: ["إلكترونيات"],
+});`,
+        codeLanguage: "ts",
+        order: 2,
+        duration: 15,
+        quiz: {
+          title: "اختبار: الأنواع والواجهات",
+          questions: [
+            {
+              text: "كيف نُعرّف خاصية اختيارية في interface؟",
+              correctIndex: 2,
+              explanation: "علامة الاستفهام ? تجعل الخاصية اختيارية.",
+              choices: [
+                { text: "age: optional number" },
+                { text: "age: number!" },
+                { text: "age?: number" },
+                { text: "age: number | optional" },
+              ],
+            },
+            {
+              text: "ما الفرق بين type و interface؟",
+              correctIndex: 3,
+              explanation:
+                "type يدعم Union/Intersection، وinterface يدعم Declaration Merging.",
+              choices: [
+                { text: "لا يوجد فرق إطلاقًا" },
+                { text: "interface أسرع" },
+                { text: "type أحدث" },
+                {
+                  text: "type أكثر مرونة، interface أفضل للدمج للكائنات",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        slug: "ts-generics",
+        title: "الأنواع العامة (Generics)",
+        summary: "اكتب دوال ومكونات قابلة لإعادة الاستخدام بأمان الأنواع.",
+        content: `# Generics في TypeScript
+
+الـ Generics تتيح كتابة كود قابل لإعادة الاستخدام يحافظ على أمان الأنواع.
+
+## المشكلة
+
+بدون generics:
+
+\`\`\`ts
+function firstNumber(arr: number[]): number | undefined {
+  return arr[0];
+}
+function firstString(arr: string[]): string | undefined {
+  return arr[0];
+}
+// تكرار مزعج!
+\`\`\`
+
+## الحل: Generics
+
+\`\`\`ts
+function first<T>(arr: T[]): T | undefined {
+  return arr[0];
+}
+
+const n = first<number>([1, 2, 3]); // number | undefined
+const s = first(["a", "b"]); // TS يستنتج string تلقائيًا
+\`\`\`
+
+\`T\` هو متغيّر نوع (type variable). يمكن أن يكون أي اسم.
+
+## Generics متعددة
+
+\`\`\`ts
+function pair<K, V>(key: K, value: V): [K, V] {
+  return [key, value];
+}
+
+const p = pair("id", 42); // [string, number]
+\`\`\`
+
+## مع قيود (Constraints)
+
+استخدم \`extends\` لتقييد النوع:
+
+\`\`\`ts
+function getLength<T extends { length: number }>(x: T): number {
+  return x.length;
+}
+
+getLength("hello"); // ✅
+getLength([1, 2]); // ✅
+getLength(123); // ❌ Error
+\`\`\`
+
+## مثال شائع: useState في React
+
+\`\`\`ts
+function useState<T>(initial: T): [T, (v: T) => void] {
+  // ...
+  return [initial, () => {}];
+}
+
+const [count, setCount] = useState(0); // T = number
+const [name, setName] = useState("أحمد"); // T = string
+\`\`\`
+
+الـ Generics أساس React hooks وكل المكتبات الحديثة.`,
+        codeExample: `interface Box<T> {
+  value: T;
+}
+
+function wrap<T>(value: T): Box<T> {
+  return { value };
+}
+
+const numberBox = wrap(42);    // Box<number>
+const stringBox = wrap("hi");  // Box<string>
+
+console.log(numberBox.value.toFixed(2)); // 42.00
+console.log(stringBox.value.toUpperCase()); // HI`,
+        codeLanguage: "ts",
+        order: 3,
+        duration: 18,
+        quiz: {
+          title: "اختبار: Generics",
+          questions: [
+            {
+              text: "ما فائدة Generics؟",
+              correctIndex: 0,
+              explanation:
+                "Generics تتيح كودًا قابلاً لإعادة الاستخدام مع الحفاظ على أمان الأنواع.",
+              choices: [
+                {
+                  text: "كود قابل لإعادة الاستخدام مع أمان الأنواع",
+                },
+                { text: "تجعل الكود أسرع في التنفيذ" },
+                { text: "تقلل حجم الملف الناتج" },
+                { text: "تضيف CSS تلقائيًا" },
+              ],
+            },
+            {
+              text: "ما الذي يفعله `extends` في `<T extends ...>`؟",
+              correctIndex: 2,
+              explanation: "extends يضع قيدًا على نوع T المسموح.",
+              choices: [
+                { text: "يجعل T فئة (class)" },
+                { text: "يمنع T من التكرار" },
+                { text: "يقيّد T بامتلاك خصائص معينة" },
+                { text: "لا شيء، مجرد زينة" },
+              ],
+            },
+          ],
+        },
+      },
+    ],
+  },
+
+  // 2. React
+  {
+    slug: "react",
+    title: "React 19 الأساسي",
+    description:
+      "تعلّم بناء واجهات المستخدم بمكونات قابلة لإعادة الاستخدام وhooks حديثة.",
+    color: "rose",
+    icon: "Atom",
+    level: "beginner",
+    order: 2,
+    duration: 120,
+    lessons: [
+      {
+        slug: "react-components",
+        title: "المكوّنات (Components) و JSX",
+        summary: "لبنة React الأساسية: كيف نكتب مكوّنًا ونمرّر props.",
+        content: `# المكوّنات في React
+
+المكوّن (Component) هو دالة JavaScript تُرجع JSX — شبيه HTML لكن داخل JS.
+
+## أبسط مكوّن
+
+\`\`\`tsx
+function Welcome() {
+  return <h1>مرحبًا بك!</h1>;
+}
+\`\`\`
+
+## مع Props
+
+الـ props هي مدخلات المكوّن:
+
+\`\`\`tsx
+type WelcomeProps = {
+  name: string;
+};
+
+function Welcome({ name }: WelcomeProps) {
+  return <h1>مرحبًا {name}!</h1>;
+}
+
+// الاستخدام:
+<Welcome name="سارة" />
+\`\`\`
+
+## JSX قواعد مهمة
+
+1. **إرجاع عنصر جذر واحد** — أو استخدم \`<>\` (Fragment).
+2. **className بدل class**.
+3. **التعبيرات بين {}**.
+4. **أغلق كل الوسوم**: \`<img />\`, \`<br />\`.
+
+\`\`\`tsx
+function Card({ title, count }: { title: string; count: number }) {
+  return (
+    <div className="card">
+      <h2>{title}</h2>
+      <p>العدد: {count}</p>
+    </div>
+  );
+}
+\`\`\`
+
+## تصدير واستيراد
+
+\`\`\`tsx
+// Button.tsx
+export function Button({ label }: { label: string }) {
+  return <button>{label}</button>;
+}
+
+// App.tsx
+import { Button } from "./Button";
+\`\`\`
+
+## في Next.js
+
+في Next.js App Router، الملف \`page.tsx\` هو مكوّن. كل مجلد داخل \`app/\` يصبح مسارًا:
+
+\`\`\`
+app/
+  page.tsx        ← /
+  about/page.tsx  ← /about
+\`\`\``,
+        codeExample: `"use client";
+
+type UserCardProps = {
+  name: string;
+  role: string;
+  avatar?: string;
+};
+
+export function UserCard({ name, role, avatar }: UserCardProps) {
+  return (
+    <div className="rounded-lg border p-4 shadow-sm">
+      <div className="flex items-center gap-3">
+        {avatar ? (
+          <img src={avatar} alt={name} className="w-12 h-12 rounded-full" />
+        ) : (
+          <div className="w-12 h-12 rounded-full bg-muted" />
+        )}
+        <div>
+          <h3 className="font-semibold">{name}</h3>
+          <p className="text-sm text-muted-foreground">{role}</p>
+        </div>
+      </div>
+    </div>
+  );
+}`,
+        codeLanguage: "tsx",
+        order: 1,
+        duration: 18,
+        quiz: {
+          title: "اختبار: المكوّنات",
+          questions: [
+            {
+              text: "ما هي الـ props؟",
+              correctIndex: 1,
+              explanation: "props هي مدخلات المكوّن من الخارج.",
+              choices: [
+                { text: "حالة داخلية للمكوّن" },
+                { text: "مدخلات المكوّن من الخارج" },
+                { text: "أنماط CSS" },
+                { text: "أسماء الملفات" },
+              ],
+            },
+            {
+              text: "لماذا نستخدم className بدل class في JSX؟",
+              correctIndex: 2,
+              explanation: "class كلمة محجوزة في JS، لذا نستخدم className.",
+              choices: [
+                { text: "class لا يعمل في React" },
+                { text: "className أسرع" },
+                {
+                  text: "لأن class كلمة محجوزة في JavaScript",
+                },
+                { text: "لا فرق بينهما" },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        slug: "react-hooks",
+        title: "Hooks: useState و useEffect",
+        summary: "إدارة الحالة المحلية والآثار الجانبية في React.",
+        content: `# React Hooks
+
+الـ Hooks دوال خاصة تضيف ميزات React للمكوّنات الدالية.
+
+## useState — حالة محلية
+
+\`\`\`tsx
+import { useState } from "react";
+
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <button onClick={() => setCount(count + 1)}>
+      النقرات: {count}
+    </button>
+  );
+}
+\`\`\`
+
+- \`count\` القيمة الحالية.
+- \`setCount\` دالة تحدّثها.
+- \`0\` القيمة الابتدائية.
+
+### تحديث يعتمد على القيمة السابقة
+
+\`\`\`tsx
+setCount(prev => prev + 1); // ✅ آمن
+\`\`\`
+
+## useEffect — الآثار الجانبية
+
+استدعاء API، اشتراكات، تعديل DOM:
+
+\`\`\`tsx
+import { useEffect, useState } from "react";
+
+function Profile({ userId }: { userId: string }) {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    fetch(\`/api/users/\${userId}\`)
+      .then(r => r.json())
+      .then(setUser);
+  }, [userId]); // ← يعاد تنفيذه عند تغيّر userId فقط
+
+  return <div>{user ? user.name : "جارٍ التحميل..."}</div>;
+}
+\`\`\`
+
+## قواعد Hooks
+
+1. **استدعِها في المستوى الأعلى** فقط (لا داخل شروط أو حلقات).
+2. **استدعِها من مكوّنات React** أو hooks مخصصة فقط.
+
+## Cleanup
+
+\`\`\`tsx
+useEffect(() => {
+  const id = setInterval(() => console.log("tick"), 1000);
+  return () => clearInterval(id); // تنظيف عند الإزالة
+}, []);
+\`\`\`
+
+## hooks أخرى شائعة
+
+- \`useMemo\` — حفظ قيمة محسوبة.
+- \`useCallback\` — حفظ دالة.
+- \`useRef\` — مرجع لقيمة لا تسبب إعادة تصيير.
+- \`useContext\` — قراءة context.`,
+        codeExample: `"use client";
+import { useState, useEffect } from "react";
+
+export function Timer() {
+  const [seconds, setSeconds] = useState(0);
+  const [running, setRunning] = useState(true);
+
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => {
+      setSeconds(s => s + 1);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [running]);
+
+  return (
+    <div className="flex gap-2 items-center">
+      <span>الثواني: {seconds}</span>
+      <button onClick={() => setRunning(r => !r)}>
+        {running ? "إيقاف" : "تشغيل"}
+      </button>
+      <button onClick={() => setSeconds(0)}>تصفير</button>
+    </div>
+  );
+}`,
+        codeLanguage: "tsx",
+        order: 2,
+        duration: 22,
+        quiz: {
+          title: "اختبار: Hooks",
+          questions: [
+            {
+              text: "ما الذي يفعله useState؟",
+              correctIndex: 0,
+              explanation:
+                "useState يضيف حالة محلية للمكوّن ويعيد [قيمة، دالة تحديث].",
+              choices: [
+                { text: "يضيف حالة محلية للمكوّن" },
+                { text: "يجلب بيانات من API" },
+                { text: "يضيف CSS" },
+                { text: "ينشئ مسارًا" },
+              ],
+            },
+            {
+              text: "ماذا يحدث إذا نسيت مصفوفة الـ deps في useEffect؟",
+              correctIndex: 2,
+              explanation:
+                "بدون deps، الـ effect يعمل بعد كل تصيير — قد يسبب حلقات لا نهائية.",
+              choices: [
+                { text: "لا شيء، يعمل بشكل طبيعي" },
+                { text: "يُلغى الـ effect" },
+                {
+                  text: "قد يعمل بعد كل تصيير ويسبب مشاكل",
+                },
+                { text: "يمنع التجميع" },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        slug: "react-events",
+        title: "الأحداث ومعالجة النماذج (Forms)",
+        summary: "onClick, onChange, onSubmit، والتحقق من المدخلات.",
+        content: `# الأحداث والنماذج في React
+
+## معالجة الأحداث
+
+\`\`\`tsx
+function Button() {
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    console.log("نُقر!", e.currentTarget);
+  };
+  return <button onClick={handleClick}>انقر</button>;
+}
+\`\`\`
+
+## المدخلات (Inputs)
+
+\`\`\`tsx
+function NameInput() {
+  const [name, setName] = useState("");
+
+  return (
+    <input
+      value={name}
+      onChange={(e) => setName(e.target.value)}
+      placeholder="اكتب اسمك"
+    />
+  );
+}
+\`\`\`
+
+هذا يسمى **controlled input** — البيانات مصدرها React state.
+
+## النماذج (Forms)
+
+\`\`\`tsx
+function ContactForm() {
+  const [email, setEmail] = useState("");
+  const [msg, setMsg] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault(); // منع إعادة تحميل الصفحة
+    console.log({ email, msg });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+      />
+      <textarea
+        value={msg}
+        onChange={(e) => setMsg(e.target.value)}
+      />
+      <button type="submit">إرسال</button>
+    </form>
+  );
+}
+\`\`\`
+
+## استخدام react-hook-form
+
+للنماذج المعقدة، استخدم \`react-hook-form\` (متوفرة في مشروعنا):
+
+\`\`\`tsx
+import { useForm } from "react-hook-form";
+
+type FormData = { email: string; password: string };
+
+function LoginForm() {
+  const { register, handleSubmit, formState: { errors } } = useForm<FormData>();
+
+  const onSubmit = (data: FormData) => {
+    console.log(data);
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <input {...register("email", { required: true })} />
+      {errors.email && <span>البريد مطلوب</span>}
+      <input type="password" {...register("password", { required: true, minLength: 6 })} />
+      <button type="submit">دخول</button>
+    </form>
+  );
+}
+\`\`\`
+
+أفضل بكثير: أداء أعلى، تحقق أسهل، أخطاء أوضح.`,
+        codeExample: `"use client";
+import { useState } from "react";
+
+export function SearchBar() {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<string[]>([]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    // محاكاة بحث
+    setResults(
+      ["تفاح", "موز", "برتقال"]
+        .filter(f => f.includes(query))
+    );
+  };
+
+  return (
+    <form onSubmit={handleSearch} className="flex gap-2">
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="ابحث عن فاكهة..."
+        className="border rounded px-3 py-1"
+      />
+      <button type="submit" className="bg-primary text-primary-foreground px-3 rounded">
+        بحث
+      </button>
+      {results.length > 0 && (
+        <ul>{results.map(r => <li key={r}>{r}</li>)}</ul>
+      )}
+    </form>
+  );
+}`,
+        codeLanguage: "tsx",
+        order: 3,
+        duration: 18,
+        quiz: {
+          title: "اختبار: الأحداث والنماذج",
+          questions: [
+            {
+              text: "ما هو الـ controlled input؟",
+              correctIndex: 1,
+              explanation:
+                "controlled input مصدره React state وقيمته محكومة بالحالة.",
+              choices: [
+                { text: "input لا يقبل إدخالًا" },
+                { text: "input قيمته محكومة بـ React state" },
+                { text: "input مخصص للأرقام فقط" },
+                { text: "input بدون onChange" },
+              ],
+            },
+            {
+              text: "لماذا نستدعي e.preventDefault() في onSubmit؟",
+              correctIndex: 1,
+              explanation:
+                "منع إعادة تحميل الصفحة (السلوك الافتراضي للنموذج).",
+              choices: [
+                { text: "لإيقاف الحدث نهائيًا" },
+                { text: "لمنع إعادة تحميل الصفحة" },
+                { text: "لتنظيف الحقول" },
+                { text: "لإرسال البيانات تلقائيًا" },
+              ],
+            },
+          ],
+        },
+      },
+    ],
+  },
+
+  // 3. Next.js
+  {
+    slug: "nextjs",
+    title: "Next.js 16 (App Router)",
+    description:
+      "إطار العمل الكامل: التوجيه، Server Components، API Routes، والصور.",
+    color: "emerald",
+    icon: "Globe",
+    level: "intermediate",
+    order: 3,
+    duration: 150,
+    lessons: [
+      {
+        slug: "nextjs-app-router",
+        title: "App Router والملفات كمسارات",
+        summary: "كيف تحوّل بنية المجلدات إلى مسارات URL.",
+        content: `# Next.js App Router
+
+في Next.js 16، **App Router** هو النظام الحديث للتوجيه. كل مجلد داخل \`app/\` يصبح مسارًا.
+
+## بنية المجلدات = المسارات
+
+\`\`\`
+app/
+  page.tsx          → /
+  about/page.tsx    → /about
+  blog/page.tsx     → /blog
+  blog/[slug]/page.tsx → /blog/:slug
+\`\`\`
+
+## الملفات الخاصة
+
+| الملف | الدور |
+|------|------|
+| \`page.tsx\` | محتوى المسار |
+| \`layout.tsx\` | تخطيط يلتف حول المسارات الفرعية |
+| \`loading.tsx\` | يظهر أثناء التحميل |
+| \`error.tsx\` | يظهر عند الخطأ |
+| \`not-found.tsx\` | 404 |
+
+## Server Components افتراضيًا
+
+كل مكوّن في \`app/\` هو **Server Component** افتراضيًا. يعمل على الخادم فقط.
+
+ميزة: أداء أعلى، حزم أصغر، وصول مباشر للبيانات.
+
+\`\`\`tsx
+// app/page.tsx — Server Component
+import { db } from "@/lib/db";
+
+export default async function Page() {
+  const users = await db.user.findMany(); // ✅ مباشرة!
+  return <ul>{users.map(u => <li key={u.id}>{u.name}</li>)}</ul>;
+}
+\`\`\`
+
+## Client Components
+
+للوصول إلى \`useState\`, \`useEffect\`, أو معالجات الأحداث، أضف:
+
+\`\`\`tsx
+"use client";
+
+import { useState } from "react";
+
+export function Counter() {
+  const [c, setC] = useState(0);
+  return <button onClick={() => setC(c + 1)}>{c}</button>;
+}
+\`\`\`
+
+## Layouts
+
+\`\`\`tsx
+// app/layout.tsx
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="ar" dir="rtl">
+      <body>
+        <nav>شريط التنقل</nav>
+        {children}
+        <footer>التذييل</footer>
+      </body>
+    </html>
+  );
+}
+\`\`\`
+
+## Dynamic Routes
+
+\`\`\`tsx
+// app/blog/[slug]/page.tsx
+export default function BlogPost({ params }: { params: { slug: string } }) {
+  return <h1>مقال: {params.slug}</h1>;
+}
+\`\`\``,
+        codeExample: `// app/page.tsx (Server Component — افتراضي)
+import { db } from "@/lib/db";
+
+export default async function HomePage() {
+  const posts = await db.post.findMany({
+    where: { published: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return (
+    <main>
+      <h1>أحدث المقالات</h1>
+      {posts.map(p => (
+        <article key={p.id}>
+          <h2>{p.title}</h2>
+          <p>{p.content}</p>
+        </article>
+      ))}
+    </main>
+  );
+}`,
+        codeLanguage: "tsx",
+        order: 1,
+        duration: 20,
+        quiz: {
+          title: "اختبار: App Router",
+          questions: [
+            {
+              text: "ماذا يصبح مجلد `app/about/`؟",
+              correctIndex: 1,
+              explanation: "كل مجلد في app/ يصبح مسار URL.",
+              choices: [
+                { text: "ملف about.tsx" },
+                { text: "مسار /about" },
+                { text: "API endpoint" },
+                { text: "لا شيء" },
+              ],
+            },
+            {
+              text: "متى تحتاج توجيه 'use client'؟",
+              correctIndex: 2,
+              explanation:
+                "عند استخدام useState, useEffect, أو معالجات أحداث.",
+              choices: [
+                { text: "دائمًا في كل ملف" },
+                { text: "فقط في layout.tsx" },
+                {
+                  text: "عند استخدام hooks أو معالجات أحداث",
+                },
+                { text: "لا حاجة له أبدًا" },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        slug: "nextjs-api",
+        title: "API Routes و Route Handlers",
+        summary: "بناء نقاط نهاية API داخل Next.js.",
+        content: `# API Routes في Next.js
+
+في App Router، النقطة \`app/api/<name>/route.ts\` تعرّف API.
+
+## أبسط API
+
+\`\`\`ts
+// app/api/hello/route.ts
+import { NextResponse } from "next/server";
+
+export async function GET() {
+  return NextResponse.json({ message: "مرحبًا!" });
+}
+\`\`\`
+
+الزيارة: \`/api/hello\` → \`{ "message": "مرحبًا!" }\`
+
+## معاملات الاستعلام (Query Params)
+
+\`\`\`ts
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const name = searchParams.get("name") ?? "ضيف";
+
+  return NextResponse.json({ hello: name });
+}
+\`\`\`
+
+## POST مع جسم JSON
+
+\`\`\`ts
+export async function POST(request: Request) {
+  const body = await request.json();
+  // body.name, body.email, ...
+
+  // حفظ في DB
+  const user = await db.user.create({
+    data: { email: body.email, name: body.name },
+  });
+
+  return NextResponse.json(user, { status: 201 });
+}
+\`\`\`
+
+## معاملات المسار الديناميكي
+
+\`\`\`ts
+// app/api/users/[id]/route.ts
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const user = await db.user.findUnique({ where: { id: params.id } });
+  if (!user) return NextResponse.json({ error: "غير موجود" }, { status: 404 });
+  return NextResponse.json(user);
+}
+\`\`\`
+
+## مثال كامل: قائمة مهام
+
+\`\`\`ts
+// app/api/todos/route.ts
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+
+export async function GET() {
+  const todos = await db.todo.findMany();
+  return NextResponse.json(todos);
+}
+
+export async function POST(request: Request) {
+  const { text } = await request.json();
+  const todo = await db.todo.create({ data: { text } });
+  return NextResponse.json(todo, { status: 201 });
+}
+\`\`\`
+
+## استدعاء API من الواجهة
+
+\`\`\`tsx
+"use client";
+async function addTodo(text: string) {
+  const res = await fetch("/api/todos", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  return res.json();
+}
+\`\`\`
+
+> **ملاحظة:** في مشروعنا، الطلبات بين منافذ مختلفة تحتاج \`?XTransformPort=PORT\`. لكن داخل نفس التطبيق لا حاجة لذلك.`,
+        codeExample: `// app/api/counter/route.ts
+import { NextResponse } from "next/server";
+
+let count = 0; // في الذاكرة (للتجربة فقط)
+
+export async function GET() {
+  return NextResponse.json({ count });
+}
+
+export async function POST() {
+  count += 1;
+  return NextResponse.json({ count });
+}
+
+export async function DELETE() {
+  count = 0;
+  return NextResponse.json({ count });
+}`,
+        codeLanguage: "ts",
+        order: 2,
+        duration: 22,
+        quiz: {
+          title: "اختبار: API Routes",
+          questions: [
+            {
+              text: "أين نضع تعريف API في App Router؟",
+              correctIndex: 1,
+              explanation: "في ملف route.ts داخل مجلد app/api/<name>/.",
+              choices: [
+                { text: "في app/api.ts" },
+                { text: "في app/api/<name>/route.ts" },
+                { text: "في pages/api/" },
+                { text: "في lib/api.ts" },
+              ],
+            },
+            {
+              text: "كيف نقرأ JSON من جسم الطلب؟",
+              correctIndex: 2,
+              explanation: "نستخدم await request.json().",
+              choices: [
+                { text: "request.body.json()" },
+                { text: "JSON.parse(request)" },
+                { text: "await request.json()" },
+                { text: "request.headers.json()" },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        slug: "nextjs-data",
+        title: "جلب البيانات وتحسين الأداء",
+        summary: "Server Components، caching، والصور المحسّنة.",
+        content: `# جلب البيانات في Next.js
+
+## الطريقة المباشرة: Server Components
+
+أبسط وأسرع طريقة — استدعِ قاعدة البيانات مباشرة في Server Component:
+
+\`\`\`tsx
+// app/users/page.tsx
+import { db } from "@/lib/db";
+
+export default async function UsersPage() {
+  const users = await db.user.findMany();
+  return (
+    <ul>
+      {users.map(u => <li key={u.id}>{u.name}</li>)}
+    </ul>
+  );
+}
+\`\`\`
+
+لا \`useEffect\`، لا \`useState\`، لا كود عميل. الأداء مثالي.
+
+## مع TanStack Query (Client-side)
+
+للبيانات الديناميكية التي تتغير كثيرًا (لوحات تحكم، إشعارات):
+
+\`\`\`tsx
+"use client";
+import { useQuery } from "@tanstack/react-query";
+
+function UserList() {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => fetch("/api/users").then(r => r.json()),
+  });
+
+  if (isLoading) return <p>جارٍ التحميل...</p>;
+  if (error) return <p>خطأ!</p>;
+
+  return <ul>{data.map(u => <li key={u.id}>{u.name}</li>)}</ul>;
+}
+\`\`\`
+
+مزايا TanStack Query:
+- **Cache ذكي** — لا إعادة جلب غير ضرورية.
+- **تحديث تلقائي** عند التركيز على النافذة.
+- **تحديثات متفائلة** (optimistic updates).
+- **تحميل/خطأ** جاهزة.
+
+## التحديث: Mutations
+
+\`\`\`tsx
+const mutation = useMutation({
+  mutationFn: (newUser) =>
+    fetch("/api/users", {
+      method: "POST",
+      body: JSON.stringify(newUser),
+    }),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["users"] });
+  },
+});
+
+mutation.mutate({ name: "سارة", email: "sara@example.com" });
+\`\`\`
+
+## الصور المحسّنة: next/image
+
+\`\`\`tsx
+import Image from "next/image";
+
+<Image
+  src="/hero.jpg"
+  alt="صورة البطل"
+  width={800}
+  height={600}
+  priority  // تحميل فوري للصور فوق الطية
+/>
+\`\`\`
+
+مزايا: تحويل صيغ تلقائي (WebP/AVIF)، أحجام متعددة، كسل (lazy) افتراضي.
+
+## Caching مع unstable_cache
+
+\`\`\`tsx
+import { unstable_cache } from "next/cache";
+
+const getUsers = unstable_cache(
+  async () => await db.user.findMany(),
+  ["users"],
+  { revalidate: 60 } // كل 60 ثانية
+);
+\`\`\``,
+        codeExample: `"use client";
+import { useQuery } from "@tanstack/react-query";
+
+type Todo = { id: string; text: string; done: boolean };
+
+export function TodoList() {
+  const { data, isLoading } = useQuery<Todo[]>({
+    queryKey: ["todos"],
+    queryFn: () => fetch("/api/todos").then(r => r.json()),
+  });
+
+  if (isLoading) return <p>جارٍ التحميل...</p>;
+
+  return (
+    <ul>
+      {data?.map(t => (
+        <li key={t.id} style={{ opacity: t.done ? 0.5 : 1 }}>
+          {t.text}
+        </li>
+      ))}
+    </ul>
+  );
+}`,
+        codeLanguage: "tsx",
+        order: 3,
+        duration: 20,
+        quiz: {
+          title: "اختبار: جلب البيانات",
+          questions: [
+            {
+              text: "ما الطريقة الأبسط لجلب البيانات في Next.js 16؟",
+              correctIndex: 0,
+              explanation:
+                "جلب البيانات مباشرة في Server Component — بدون hooks.",
+              choices: [
+                { text: "جلب مباشر في Server Component" },
+                { text: "useEffect دائمًا" },
+                { text: "fetch في script منفصل" },
+                { text: "localStorage فقط" },
+              ],
+            },
+            {
+              text: "ما فائدة TanStack Query؟",
+              correctIndex: 1,
+              explanation: "Cache ذكي، إعادة محاولة، تحديثات متفائلة.",
+              choices: [
+                { text: "بديل لـ Prisma" },
+                { text: "Cache ذكي وإدارة حالة الخادم" },
+                { text: "مكتبة CSS" },
+                { text: "أداة نشر" },
+              ],
+            },
+          ],
+        },
+      },
+    ],
+  },
+
+  // 4. Tailwind CSS
+  {
+    slug: "tailwind",
+    title: "Tailwind CSS 4",
+    description:
+      "نظام تصميم سريع قائم على الأدوات المساعدة (utility-first).",
+    color: "amber",
+    icon: "Palette",
+    level: "beginner",
+    order: 4,
+    duration: 80,
+    lessons: [
+      {
+        slug: "tailwind-basics",
+        title: "أساسيات Tailwind: الأدوات المساعدة",
+        summary: "كيف تنسّق عناصرك بدون كتابة CSS.",
+        content: `# أساسيات Tailwind CSS
+
+Tailwind إطار CSS قائم على **utility classes** — أصغر أدوات تنسيق تُجمع لتبني واجهات.
+
+## لماذا Tailwind؟
+
+- **سرعة** — لا تبقى ملفات CSS ضخمة.
+- **اتساق** — نظام تصميم موحد (ألوان، مسافات، خطوط).
+- ** responsive** — بسهولة بلا breakpoints يدوية.
+- **حجم نهائي أصغر** — فقط الكلاسات المستخدمة.
+
+## أدوات أساسية
+
+\`\`\`html
+<div class="p-4 bg-white rounded-lg shadow-md border border-gray-200">
+  <h1 class="text-2xl font-bold text-gray-900">عنوان</h1>
+  <p class="text-sm text-gray-600 mt-2">نص فرعي</p>
+</div>
+\`\`\`
+
+### التفسير
+
+| الكلاس | المعنى |
+|-------|------|
+| \`p-4\` | padding: 1rem |
+| \`bg-white\` | خلفية بيضاء |
+| \`rounded-lg\` | حواف مدورة |
+| \`shadow-md\` | ظل متوسط |
+| \`text-2xl\` | حجم خط 1.5rem |
+| \`font-bold\` | خط عريض |
+| \`mt-2\` | margin-top: 0.5rem |
+
+## نظام الألوان
+
+Tailwind يأتي بنظام ألوان غني:
+
+\`\`\`
+gray, slate, red, orange, amber, yellow, lime, green,
+emerald, teal, cyan, sky, blue, indigo, violet,
+purple, fuchsia, pink, rose
+\`\`\`
+
+كل لون بدرجات من 50 إلى 950:
+
+\`\`\`
+bg-emerald-50   ← أخضر فاتح جدًا
+bg-emerald-500  ← أخضر متوسط
+bg-emerald-900  ← أخضر داكن جدًا
+\`\`\`
+
+## تدرجات
+
+\`\`\`html
+<div class="bg-gradient-to-r from-emerald-400 to-teal-500">
+  تدرّج جميل
+</div>
+\`\`\`
+
+## Flexbox و Grid
+
+\`\`\`html
+<div class="flex items-center justify-between gap-4">
+  <div>عنصر 1</div>
+  <div>عنصر 2</div>
+</div>
+
+<div class="grid grid-cols-3 gap-4">
+  <div>1</div><div>2</div><div>3</div>
+</div>
+\`\`\`
+
+## responsive
+
+\`\`\`html
+<!-- جوال: عمود واحد، سطح مكتب: 3 أعمدة -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  ...
+</div>
+\`\`\`
+
+البادئات: \`sm:\` (640px), \`md:\` (768px), \`lg:\` (1024px), \`xl:\` (1280px).`,
+        codeExample: `<div className="max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden md:max-w-2xl">
+  <div className="md:flex">
+    <div className="md:shrink-0">
+      <img className="h-48 w-full object-cover md:h-full md:w-48"
+           src="/photo.jpg" alt="صورة" />
+    </div>
+    <div className="p-8">
+      <div className="uppercase tracking-wide text-sm text-emerald-600 font-semibold">
+        فئة
+      </div>
+      <a href="#" className="block mt-1 text-lg font-medium text-gray-900">
+        عنوان البطاقة
+      </a>
+      <p className="mt-2 text-gray-500">
+        وصف قصير للبطاقة يشرح محتواها.
+      </p>
+    </div>
+  </div>
+</div>`,
+        codeLanguage: "tsx",
+        order: 1,
+        duration: 18,
+        quiz: {
+          title: "اختبار: أساسيات Tailwind",
+          questions: [
+            {
+              text: "ما معنى الكلاس `p-4`؟",
+              correctIndex: 1,
+              explanation: "p-4 = padding 1rem.",
+              choices: [
+                { text: "padding 4px" },
+                { text: "padding 1rem" },
+                { text: "position 4" },
+                { text: "padding 4%" },
+              ],
+            },
+            {
+              text: "كيف تجعل تخطيطًا 3 أعمدة على سطح المكتب فقط؟",
+              correctIndex: 2,
+              explanation: "grid-cols-1 md:grid-cols-3.",
+              choices: [
+                { text: "grid-3" },
+                { text: "grid-cols-3-desktop" },
+                { text: "grid-cols-1 md:grid-cols-3" },
+                { text: "desktop:grid-3" },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        slug: "tailwind-theme",
+        title: "الثيم، الوضع الليلي، و RTL",
+        summary: "dark mode، CSS variables، ودعم اللغة العربية.",
+        content: `# الثيم والوضع الليلي و RTL
+
+## الوضع الليلي (Dark Mode)
+
+في Tailwind 4 + shadcn/ui، استخدم \`next-themes\`:
+
+\`\`\`tsx
+// components/ThemeProvider.tsx
+"use client";
+import { ThemeProvider } from "next-themes";
+
+export function ThemeProvider({ children }) {
+  return (
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+    >
+      {children}
+    </ThemeProvider>
+  );
+}
+\`\`\`
+
+ثم في التخطيط:
+
+\`\`\`tsx
+<html suppressHydrationWarning>
+  <body>
+    <ThemeProvider>{children}</ThemeProvider>
+  </body>
+</html>
+\`\`\`
+
+ثم استخدم الكلاس \`dark:\`:
+
+\`\`\`tsx
+<div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
+  محتوى
+</div>
+\`\`\`
+
+## CSS Variables (مع shadcn/ui)
+
+shadcn/ui يستخدم متغيّرات CSS لألوانه. تجدها في \`globals.css\`:
+
+\`\`\`css
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --primary: 222.2 47.4% 11.2%;
+}
+
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+}
+\`\`\`
+
+استخدمها عبر كلاسات shadcn: \`bg-background\`, \`text-foreground\`, \`bg-primary\`.
+
+## دعم RTL (العربية)
+
+أضف \`dir="rtl"\` على \`<html>\`:
+
+\`\`\`tsx
+<html lang="ar" dir="rtl">
+\`\`\`
+
+Tailwind يدعم RTL تلقائيًا عبر الكلاسات المنطقية:
+
+| LTR | RTL (ينقلب تلقائيًا) |
+|-----|-----|
+| \`ml-4\` (margin-left) | \`ms-4\` (margin-inline-start) |
+| \`mr-4\` (margin-right) | \`me-4\` (margin-inline-end) |
+| \`pl-4\` (padding-left) | \`ps-4\` (padding-inline-start) |
+| \`text-left\` | \`text-start\` |
+| \`text-right\` | \`text-end\` |
+
+\`\`\`tsx
+<div className="ps-4 pe-8 text-start">
+  <!-- يعمل في RTL و LTR -->
+</div>
+\`\`\`
+
+## خط عربي جميل
+
+\`\`\`tsx
+import { Cairo } from "next/font/google";
+const cairo = Cairo({ subsets: ["arabic", "latin"], variable: "--font-cairo" });
+
+<html lang="ar" dir="rtl" className={cairo.variable}>
+\`\`\`
+
+## تحريك (Animation)
+
+Tailwind 4 + \`tw-animate-css\` توفر حركات جاهزة:
+
+\`\`\`tsx
+<div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+  يظهر بنعومة
+</div>
+\`\`\`
+
+أو مع Framer Motion لحركات معقدة:
+
+\`\`\`tsx
+import { motion } from "framer-motion";
+
+<motion.div
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.5 }}
+>
+  محتوى متحرك
+</motion.div>
+\`\`\``,
+        codeExample: `"use client";
+import { useTheme } from "next-themes";
+import { Moon, Sun } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+export function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+    >
+      <Sun className="h-5 w-5 dark:hidden" />
+      <Moon className="h-5 w-5 hidden dark:block" />
+    </Button>
+  );
+}`,
+        codeLanguage: "tsx",
+        order: 2,
+        duration: 18,
+        quiz: {
+          title: "اختبار: الثيم و RTL",
+          questions: [
+            {
+              text: "كيف نفعل الوضع الليلي في shadcn/ui؟",
+              correctIndex: 2,
+              explanation: "next-themes مع attribute='class' + كلاس dark:.",
+              choices: [
+                { text: "إضافة class='dark' يدويًا" },
+                { text: "تعطيل CSS" },
+                {
+                  text: "next-themes + attribute='class' + dark: classes",
+                },
+                { text: "إعادة تثبيت Tailwind" },
+              ],
+            },
+            {
+              text: "أي كلاس يضمن عمل الاتجاه في RTL و LTR؟",
+              correctIndex: 1,
+              explanation: "ms-/me- (margin-inline-start/end) منطقية.",
+              choices: [
+                { text: "ml-/mr-" },
+                { text: "ms-/me-" },
+                { text: "left-/right-" },
+                { text: "side-start-" },
+              ],
+            },
+          ],
+        },
+      },
+    ],
+  },
+
+  // 5. Prisma
+  {
+    slug: "prisma",
+    title: "Prisma ORM",
+    description: "الوصول لقاعدة البيانات بأمان الأنواع من TypeScript.",
+    color: "violet",
+    icon: "Database",
+    level: "intermediate",
+    order: 5,
+    duration: 90,
+    lessons: [
+      {
+        slug: "prisma-schema",
+        title: "مخطط Prisma والنماذج",
+        summary: "كيف تصف جداول قاعدة البيانات في schema.prisma.",
+        content: `# مخطط Prisma
+
+Prisma ORM يتيح الوصول لقاعدة البيانات بأمان تام للأنواع من TypeScript.
+
+## ملف schema.prisma
+
+\`\`\`prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"  // أو postgresql, mysql
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  posts     Post[]
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  title     String
+  content   String?
+  published Boolean  @default(false)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+}
+\`\`\`
+
+## الأنواع الأساسية
+
+| النوع | الاستخدام |
+|-----|------|
+| \`String\` | نصوص |
+| \`Int\` | أعداد صحيحة |
+| \`Float\` | أعداد عشرية |
+| \`Boolean\` | صحيح/خطأ |
+| \`DateTime\` | تاريخ ووقت |
+| \`Json\` | JSON |
+| \`Bytes\` | بيانات ثنائية |
+
+## المعدّلات (Modifiers)
+
+- \`?\` — اختياري (\`name String?\`)
+- \`[]\` — مصفوفة (\`tags String[]\`) — *لا يدعمها SQLite*
+- \`@id\` — مفتاح أساسي
+- \`@unique\` — قيمة فريدة
+- \`@default()\` — قيمة افتراضية
+- \`@relation\` — علاقة بين نماذج
+
+## العلاقات (Relations)
+
+### واحد-للعديد (One-to-Many)
+
+\`\`\`prisma
+model User {
+  id    String @id
+  posts Post[]  // مستخدم له عدة منشورات
+}
+
+model Post {
+  id       String @id
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+}
+\`\`\`
+
+### واحد-لواحد
+
+\`\`\`prisma
+model User {
+  id      String  @id
+  profile Profile?
+}
+
+model Profile {
+  id     String @id
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+}
+\`\`\`
+
+### العديد-للعديد
+
+\`\`\`prisma
+model Post {
+  id    String @id
+  tags  Tag[]  @relation("PostTags")
+}
+
+model Tag {
+  id    String @id
+  posts Post[] @relation("PostTags")
+}
+\`\`\`
+
+## بعد التعديل
+
+كل تغيير في schema:
+
+\`\`\`bash
+bun run db:push     # يطبّق التغييرات
+bun run db:generate # يُحدّث Prisma Client
+\`\`\`
+
+## استخدام Prisma Client
+
+\`\`\`ts
+import { db } from "@/lib/db";
+
+const user = await db.user.create({
+  data: { email: "a@b.com", name: "سارة" },
+});
+
+const all = await db.user.findMany();
+\`\`\``,
+        codeExample: `// prisma/schema.prisma
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  completed   Boolean  @default(false)
+  priority    String   @default("medium") // low | medium | high
+  dueDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  assigneeId  String
+  assignee    User     @relation(fields: [assigneeId], references: [id])
+}
+
+// في الكود:
+import { db } from "@/lib/db";
+
+const task = await db.task.create({
+  data: {
+    title: "إنهاء التقرير",
+    priority: "high",
+    assigneeId: "user-1",
+  },
+});`,
+        codeLanguage: "prisma",
+        order: 1,
+        duration: 22,
+        quiz: {
+          title: "اختبار: مخطط Prisma",
+          questions: [
+            {
+              text: "ماذا يعني `?` بعد نوع الحقل؟",
+              correctIndex: 2,
+              explanation: "? تجعل الحقل اختياريًا (يمكن أن يكون null).",
+              choices: [
+                { text: "حقل مشفّر" },
+                { text: "حقل مفهرس" },
+                { text: "حقل اختياري (null)" },
+                { text: "حقل للقراءة فقط" },
+              ],
+            },
+            {
+              text: "كيف نطبّق تغييرات في schema؟",
+              correctIndex: 1,
+              explanation: "bun run db:push.",
+              choices: [
+                { text: "إعادة تشغيل Next.js" },
+                { text: "bun run db:push" },
+                { text: "git commit" },
+                { text: "حذف قاعدة البيانات" },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        slug: "prisma-queries",
+        title: "الاستعلامات: CRUD متقدّم",
+        summary: "findMany, findUnique, create, update, delete, relations.",
+        content: `# استعلامات Prisma
+
+## Create
+
+\`\`\`ts
+// واحد
+const user = await db.user.create({
+  data: { email: "a@b.com", name: "سارة" },
+});
+
+// عدة
+const users = await db.user.createMany({
+  data: [
+    { email: "a@b.com" },
+    { email: "c@d.com" },
+  ],
+});
+
+// مع علاقة (cascade)
+const post = await db.post.create({
+  data: {
+    title: "مرحبًا",
+    author: { connect: { id: "user-1" } },
+  },
+});
+\`\`\`
+
+## Read
+
+\`\`\`ts
+// الكل
+const all = await db.user.findMany();
+
+// بشرط
+const active = await db.user.findMany({
+  where: { isActive: true },
+});
+
+// واحد بمعرّف
+const u = await db.user.findUnique({ where: { id: "1" } });
+
+// واحد بشرط
+const jane = await db.user.findFirst({
+  where: { name: { contains: "سارة" } },
+});
+
+// مع العلاقات (eager loading)
+const userWithPosts = await db.user.findUnique({
+  where: { id: "1" },
+  include: { posts: true },
+});
+
+// حقول محددة (select)
+const minimal = await db.user.findMany({
+  select: { id: true, name: true },
+});
+\`\`\`
+
+## شروط متقدمة
+
+\`\`\`ts
+const results = await db.post.findMany({
+  where: {
+    AND: [
+      { published: true },
+      { OR: [
+        { title: { contains: "React" } },
+        { title: { contains: "Next" } },
+      ] },
+    ],
+    createdAt: { gte: new Date("2024-01-01") },
+  },
+  orderBy: { createdAt: "desc" },
+  take: 10,           // حد
+  skip: 0,            // لتقسيم الصفحات
+});
+\`\`\`
+
+## Update
+
+\`\`\`ts
+const updated = await db.user.update({
+  where: { id: "1" },
+  data: { name: "اسم جديد" },
+});
+
+// عدة صفوف
+await db.user.updateMany({
+  where: { isActive: false },
+  data: { isActive: true },
+});
+\`\`\`
+
+## Delete
+
+\`\`\`ts
+await db.user.delete({ where: { id: "1" } });
+await db.user.deleteMany({ where: { isActive: false } });
+\`\`\`
+
+## Transactions
+
+\`\`\`ts
+const [user, profile] = await db.$transaction([
+  db.user.create({ data: { email: "a@b.com" } }),
+  db.profile.create({ data: { userId: "x", bio: "..." } }),
+]);
+\`\`\`
+
+## Pagination
+
+\`\`\`ts
+// صفحة 2، 10 عناصر
+const page = 2;
+const pageSize = 10;
+
+const items = await db.post.findMany({
+  skip: (page - 1) * pageSize,
+  take: pageSize,
+});
+
+const total = await db.post.count();
+const hasMore = page * pageSize < total;
+\`\`\``,
+        codeExample: `import { db } from "@/lib/db";
+
+export async function getDashboardStats() {
+  const [totalUsers, activeUsers, recentPosts] = await Promise.all([
+    db.user.count(),
+    db.user.count({ where: { isActive: true } }),
+    db.post.findMany({
+      where: { published: true },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      include: { author: { select: { name: true } } },
+    }),
+  ]);
+
+  return { totalUsers, activeUsers, recentPosts };
+}`,
+        codeLanguage: "ts",
+        order: 2,
+        duration: 22,
+        quiz: {
+          title: "اختبار: استعلامات Prisma",
+          questions: [
+            {
+              text: "أي دالة تجلب كل الصفوف؟",
+              correctIndex: 1,
+              explanation: "findMany تجلب مصفوفة بكل المطابقات.",
+              choices: [
+                { text: "findAll" },
+                { text: "findMany" },
+                { text: "getAll" },
+                { text: "list" },
+              ],
+            },
+            {
+              text: "كذا نجلب العلاقات مع النموذج؟",
+              correctIndex: 1,
+              explanation: "include: { relation: true } أو select.",
+              choices: [
+                { text: "with: { relation: true }" },
+                { text: "include: { relation: true }" },
+                { text: "join: { relation: true }" },
+                { text: "populate: { relation: true }" },
+              ],
+            },
+          ],
+        },
+      },
+    ],
+  },
+
+  // 6. Zustand
+  {
+    slug: "zustand",
+    title: "Zustand لإدارة الحالة",
+    description:
+      "إدارة حالة العميل ببساطة بالغة — بديل خفيف لـ Redux.",
+    color: "teal",
+    icon: "Boxes",
+    level: "intermediate",
+    order: 6,
+    duration: 70,
+    lessons: [
+      {
+        slug: "zustand-basics",
+        title: "متجر Zustand الأساسي",
+        summary: "create، state، actions، selectors.",
+        content: `# Zustand: إدارة الحالة ببساطة
+
+Zustand مكتبة صغيرة جدًا لإدارة الحالة في React. أسهل بكثير من Redux.
+
+## لماذا Zustand؟
+
+- **بسيط** — لا boilerplate، لا reducers.
+- **خفيف** — ~1KB.
+- **مرن** — يعمل في أي مكان.
+- **TypeScript-friendly** — أنواع ممتازة.
+
+## إنشاء متجر (Store)
+
+\`\`\`ts
+// lib/store.ts
+import { create } from "zustand";
+
+type CounterState = {
+  count: number;
+  increment: () => void;
+  decrement: () => void;
+  reset: () => void;
+};
+
+export const useCounter = create<CounterState>((set) => ({
+  count: 0,
+  increment: () => set((s) => ({ count: s.count + 1 })),
+  decrement: () => set((s) => ({ count: s.count - 1 })),
+  reset: () => set({ count: 0 }),
+}));
+\`\`\`
+
+## الاستخدام في مكوّن
+
+\`\`\`tsx
+import { useCounter } from "@/lib/store";
+
+function Counter() {
+  const count = useCounter((s) => s.count);     // selector
+  const increment = useCounter((s) => s.increment);
+
+  return (
+    <div>
+      <p>{count}</p>
+      <button onClick={increment}>+</button>
+    </div>
+  );
+}
+\`\`\`
+
+## لماذا selectors؟
+
+Selectors تمنع إعادة التصيير غير الضرورية:
+
+\`\`\`tsx
+// ❌ سيء: يعيد التصيير عند أي تغيير
+const store = useCounter();
+
+// ✅ جيد: يعيد التصيير فقط عند تغيير count
+const count = useCounter((s) => s.count);
+\`\`\`
+
+## حالة معقدة
+
+\`\`\`ts
+type CartItem = { id: string; name: string; price: number; qty: number };
+
+type CartState = {
+  items: CartItem[];
+  add: (item: CartItem) => void;
+  remove: (id: string) => void;
+  clear: () => void;
+  total: () => number;
+};
+
+export const useCart = create<CartState>((set, get) => ({
+  items: [],
+  add: (item) =>
+    set((s) => {
+      const existing = s.items.find((i) => i.id === item.id);
+      if (existing) {
+        return {
+          items: s.items.map((i) =>
+            i.id === item.id ? { ...i, qty: i.qty + item.qty } : i
+          ),
+        };
+      }
+      return { items: [...s.items, item] };
+    }),
+  remove: (id) =>
+    set((s) => ({ items: s.items.filter((i) => i.id !== id) })),
+  clear: () => set({ items: [] }),
+  total: () => get().items.reduce((sum, i) => sum + i.price * i.qty, 0),
+}));
+\`\`\`
+
+## الاستمرار (Persistence)
+
+حفظ الحالة في localStorage:
+
+\`\`\`ts
+import { persist } from "zustand/middleware";
+
+export const useSettings = create(
+  persist<SettingsState>(
+    (set) => ({
+      theme: "light",
+      lang: "ar",
+      setTheme: (theme) => set({ theme }),
+    }),
+    { name: "settings-storage" }
+  )
+);
+\`\`\`
+
+## مع next-themes (مثال واقعي)
+
+\`\`\`ts
+type UIState = {
+  sidebarOpen: boolean;
+  toggleSidebar: () => void;
+  currentView: "home" | "lessons" | "progress";
+  setView: (v: UIState["currentView"]) => void;
+};
+
+export const useUI = create<UIState>((set) => ({
+  sidebarOpen: false,
+  toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
+  currentView: "home",
+  setView: (currentView) => set({ currentView }),
+}));
+\`\`\``,
+        codeExample: `import { create } from "zustand";
+import { persist } from "zustand/middleware";
+
+type FavoritesState = {
+  ids: string[];
+  toggle: (id: string) => void;
+  isFavorite: (id: string) => boolean;
+};
+
+export const useFavorites = create<FavoritesState>()(
+  persist(
+    (set, get) => ({
+      ids: [],
+      toggle: (id) =>
+        set((s) => ({
+          ids: s.ids.includes(id)
+            ? s.ids.filter((x) => x !== id)
+            : [...s.ids, id],
+        })),
+      isFavorite: (id) => get().ids.includes(id),
+    }),
+    { name: "favorites" }
+  )
+);
+
+// الاستخدام:
+function FavButton({ id }: { id: string }) {
+  const toggle = useFavorites((s) => s.toggle);
+  const isFav = useFavorites((s) => s.ids.includes(id));
+  return (
+    <button onClick={() => toggle(id)}>
+      {isFav ? "★" : "☆"}
+    </button>
+  );
+}`,
+        codeLanguage: "ts",
+        order: 1,
+        duration: 22,
+        quiz: {
+          title: "اختبار: Zustand",
+          questions: [
+            {
+              text: "ما فائدة selectors في Zustand؟",
+              correctIndex: 1,
+              explanation: "selectors تمنع إعادة التصيير غير الضرورية.",
+              choices: [
+                { text: "تسريع الشبكة" },
+                { text: "منع إعادة التصيير غير الضرورية" },
+                { text: "تشفير الحالة" },
+                { text: "حفظ الحالة تلقائيًا" },
+              ],
+            },
+            {
+              text: "كيف نحفظ الحالة في localStorage؟",
+              correctIndex: 1,
+              explanation: "persist middleware مع name.",
+              choices: [
+                { text: "localStorage.save()" },
+                { text: "persist() middleware" },
+                { text: "save: true option" },
+                { text: "لا يدعم Zustand ذلك" },
+              ],
+            },
+          ],
+        },
+      },
+    ],
+  },
+];
+
+const achievements = [
+  {
+    slug: "first-lesson",
+    title: "الخطوة الأولى",
+    description: "أكملت أول درس لك",
+    icon: "Footprints",
+    condition: "lessons_completed:1",
+  },
+  {
+    slug: "track-master",
+    title: "سيّد المسار",
+    description: "أكملت مسارًا تعليميًا كاملًا",
+    icon: "Trophy",
+    condition: "track_completed:1",
+  },
+  {
+    slug: "quiz-master",
+    title: "بطل الاختبارات",
+    description: "حصلت على درجة كاملة في 3 اختبارات",
+    icon: "Award",
+    condition: "perfect_quizzes:3",
+  },
+  {
+    slug: "scholar",
+    title: "العالم المثابر",
+    description: "أكملت 10 دروس",
+    icon: "GraduationCap",
+    condition: "lessons_completed:10",
+  },
+  {
+    slug: "polyglot",
+    title: "متعدد المعارف",
+    description: "بدأت 3 مسارات مختلفة",
+    icon: "Languages",
+    condition: "tracks_started:3",
+  },
+];
+
+async function main() {
+  console.log("🌱 Seeding database...");
+
+  // Clear existing
+  await db.userAchievement.deleteMany();
+  await db.lessonProgress.deleteMany();
+  await db.trackProgress.deleteMany();
+  await db.choice.deleteMany();
+  await db.question.deleteMany();
+  await db.quiz.deleteMany();
+  await db.lesson.deleteMany();
+  await db.track.deleteMany();
+  await db.achievement.deleteMany();
+
+  // Seed achievements
+  for (const a of achievements) {
+    await db.achievement.create({ data: a });
+  }
+  console.log(`✅ ${achievements.length} achievements`);
+
+  // Seed tracks + lessons + quizzes
+  for (const t of tracks) {
+    const track = await db.track.create({
+      data: {
+        slug: t.slug,
+        title: t.title,
+        description: t.description,
+        color: t.color,
+        icon: t.icon,
+        level: t.level,
+        order: t.order,
+        duration: t.duration,
+      },
+    });
+
+    for (const l of t.lessons) {
+      const lesson = await db.lesson.create({
+        data: {
+          trackId: track.id,
+          slug: l.slug,
+          title: l.title,
+          summary: l.summary,
+          content: l.content,
+          codeExample: l.codeExample ?? null,
+          codeLanguage: l.codeLanguage ?? null,
+          order: l.order,
+          duration: l.duration,
+        },
+      });
+
+      if (l.quiz) {
+        const quiz = await db.quiz.create({
+          data: { lessonId: lesson.id, title: l.quiz.title },
+        });
+
+        for (const q of l.quiz.questions) {
+          const question = await db.question.create({
+            data: {
+              quizId: quiz.id,
+              text: q.text,
+              correctIndex: q.correctIndex,
+              explanation: q.explanation ?? null,
+              order: q.order ?? 0,
+            },
+          });
+          for (const [i, c] of q.choices.entries()) {
+            await db.choice.create({
+              data: {
+                questionId: question.id,
+                text: c.text,
+                order: i,
+              },
+            });
+          }
+        }
+      }
+    }
+
+    console.log(`  ✅ Track "${t.title}" with ${t.lessons.length} lessons`);
+  }
+
+  console.log("🎉 Seeding complete!");
+  const trackCount = await db.track.count();
+  const lessonCount = await db.lesson.count();
+  const quizCount = await db.quiz.count();
+  console.log(`   Tracks: ${trackCount}, Lessons: ${lessonCount}, Quizzes: ${quizCount}`);
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await db.$disconnect();
+  });

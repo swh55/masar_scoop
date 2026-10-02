@@ -1,0 +1,154 @@
+// Prisma schema for the Programming Academy
+// أكاديمية البرمجة - مخطط قاعدة البيانات
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// مسار تعلم (مثل: TypeScript, React, Next.js)
+model Track {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String
+  /// لون التمييز (tailwind class)
+  color       String
+  /// أيقونة من lucide-react
+  icon        String
+  /// مستوى الصعوبة: beginner | intermediate | advanced
+  level       String   @default("beginner")
+  /// الترتيب في القائمة
+  order       Int      @default(0)
+  /// Estimated duration in minutes
+  duration    Int      @default(60)
+  published   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lessons     Lesson[]
+  progress    TrackProgress[]
+}
+
+/// درس داخل مسار تعلم
+model Lesson {
+  id          String   @id @default(cuid())
+  trackId     String
+  track       Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  slug        String   @unique
+  title       String
+  summary     String
+  /// Markdown content of the lesson
+  content     String
+  /// Code example (string)
+  codeExample String?
+  /// لغة الكود (ts, tsx, bash, css, prisma, sql)
+  codeLanguage String?
+  order       Int      @default(0)
+  duration    Int      @default(15)
+  published   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  quiz        Quiz?
+  progress    LessonProgress[]
+}
+
+/// اختبار قصير مرتبط بدرس
+model Quiz {
+  id        String   @id @default(cuid())
+  lessonId  String   @unique
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  questions Question[]
+}
+
+/// سؤال داخل اختبار
+model Question {
+  id        String   @id @default(cuid())
+  quizId    String
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  text      String
+  /// فهرس الإجابة الصحيحة (0-based)
+  correctIndex Int
+  /// شرح الإجابة
+  explanation String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  choices   Choice[]
+}
+
+/// خيارات السؤال
+model Choice {
+  id         String   @id @default(cuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String
+  order      Int      @default(0)
+}
+
+/// تقدم المستخدم في مسار
+model TrackProgress {
+  id        String   @id @default(cuid())
+  /// معرّف جلسة المستخدم (محلي بدون مصادقة فعلية)
+  sessionId String
+  trackId   String
+  track     Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  /// نسبة الإنجاز 0-100
+  percent   Int      @default(0)
+  lastOpenedAt DateTime? @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, trackId])
+}
+
+/// تقدم المستخدم في درس
+model LessonProgress {
+  id        String   @id @default(cuid())
+  sessionId String
+  lessonId  String
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completed Boolean  @default(false)
+  /// عدد المحاولات في الاختبار
+  quizAttempts Int   @default(0)
+  /// أفضل نتيجة في الاختبار (0-100)
+  bestScore Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, lessonId])
+}
+
+/// شارة إنجاز
+model Achievement {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String
+  icon        String
+  /// شرط الفوز: tracks_completed:3 / first_lesson / quiz_master / etc
+  condition   String
+  createdAt   DateTime @default(now())
+
+  userAchievements UserAchievement[]
+}
+
+/// إنجازات المستخدم المكسوبة
+model UserAchievement {
+  id          String   @id @default(cuid())
+  sessionId   String
+  achievementId String
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  earnedAt    DateTime @default(now())
+
+  @@unique([sessionId, achievementId])
+}
