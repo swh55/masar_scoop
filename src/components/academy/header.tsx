@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { HeaderXPIndicator } from "./xp-indicator";
+import { SearchTriggerButton } from "./global-search";
 import { useUI } from "@/lib/store";
 import { useStreak } from "@/hooks/use-streak";
 import { useBookmarks } from "@/hooks/use-bookmarks";
@@ -51,6 +52,9 @@ export function Header() {
         </div>
 
         <nav className="flex items-center gap-1">
+          {/* Global search trigger */}
+          <SearchTriggerButton />
+
           {/* Streak indicator */}
           <AnimatePresence>
             {streak > 0 && (

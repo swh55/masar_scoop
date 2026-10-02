@@ -15,6 +15,7 @@ import { AchievementsView } from "@/components/academy/achievements-view";
 import { BookmarksView } from "@/components/academy/bookmarks-view";
 import { OnboardingModal } from "@/components/academy/onboarding-modal";
 import { LevelUpCelebration } from "@/components/academy/confetti";
+import { GlobalSearch } from "@/components/academy/global-search";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,6 +50,7 @@ function AcademyApp() {
       </main>
       <Footer />
       <OnboardingModal />
+      <GlobalSearch />
       <LevelUpCelebration
         level={level}
         levelTitle={levelTitle}

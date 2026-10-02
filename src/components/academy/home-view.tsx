@@ -24,6 +24,7 @@ import { useUI } from "@/lib/store";
 import { useSessionId } from "@/hooks/use-session-id";
 import { TrackIcon } from "./track-icon";
 import { DailyChallengeCard } from "./daily-challenge-card";
+import { RecommendedNextCard } from "./recommended-next-card";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -313,7 +314,10 @@ export function HomeView() {
 
       {/* Daily Challenge — always visible */}
       <section className="container mx-auto px-4 sm:px-6 py-12">
-        <DailyChallengeCard />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <DailyChallengeCard />
+          <RecommendedNextCard />
+        </div>
       </section>
 
       {/* Tracks grid */}

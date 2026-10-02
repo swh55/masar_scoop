@@ -617,3 +617,104 @@ Task: مراجعة وإضافة إشارات مرجعية واحتفال رفع 
 7. **[منخفض]** إضافة تصدير/استيراد التقدّم (JSON)
 8. **[منخفض]** إضافة PWA support للعمل offline
 
+
+---
+
+## Task ID: 7
+Agent: Z.ai Code (cron review round 6)
+Task: مراجعة وإضافة بحث شامل ومحتويات الدرس وتوصية ذكية للدرس التالي
+
+### الحالة الحالية للمشروع (تقييم)
+- ✅ المشروع مستقر ويعمل على المنفذ 3000
+- ✅ `bun run lint` يجتاز بدون أخطاء
+- ✅ XP system يعمل (465 XP, Level 3 "متمرّس")
+- ✅ 23 درسًا عبر 6 مسارات
+- ✅ نظام التحدّي اليومي مع ×2 XP bonus يعمل
+- ✅ الإشارات المرجعية تعمل (1 bookmark)
+- ✅ لا أخطاء حديثة في سجل الـ dev server
+
+### الأهداف المنجزة في هذه الجولة
+
+#### 1. البحث الشامل (Global Search)
+- **API `/api/search?q=...`** — بحث في كل الدروس والمسارات:
+  - يبحث في title, summary, content للدروس
+  - يبحث في title, description للمسارات
+  - ترتيب النتائج: title match (+100), summary match (+50), content match (+10)
+  - حد 20 نتيجة للدروس + 10 للمسارات
+- **`GlobalSearch` component** — command palette كامل:
+  - يفتح بـ Ctrl+K / Cmd+K أو زر "/" أو زر البحث في الـ Header
+  - بحث فوري أثناء الكتابة (debounce عبر React Query)
+  - لوحة نتائج مع keyboard navigation (↑↓ للتنقل، Enter للاختيار، ESC للإغلاق)
+  - تمييز النتيجة النشطة (highlight)
+  - أقسام منفصلة: مسارات + دروس
+  - حالة فارغة مع اقتراحات (useState, Prisma, Tailwind, Generics, hooks)
+  - حالة "لا نتائج" مع رسالة واضحة
+  - footer مع اختصارات لوحة المفاتيح
+  - spring animation عند الفتح/الإغلاق
+- **`SearchTriggerButton`** — زر في الـ Header مع:
+  - أيقونة Search
+  - نص "بحث في الدروس" (على lg+)
+  - kbd badge "Ctrl K"
+
+#### 2. محتويات الدرس (Table of Contents)
+- **`LessonTableOfContents` component**:
+  - يستخرج العناوين (h2, h3) من markdown تلقائيًا
+  - **desktop**: floating sidebar على اليمين (في RTL)
+    - يظهر ثابتًا أثناء التمرير
+    - تمييز القسم النشط (IntersectionObserver)
+    - border-s-2 للقسم النشط
+  - **mobile**: زر قابل للطي "محتويات الدرس"
+    - يعرض عدد الأقسام
+    - animates open/close
+  - النقر على عنوان يمرر بسلاسة للقسم (scrollIntoView مع offset للـ header)
+  - تخطّي أول h1 (عنوان الدرس يظهر في الـ hero)
+
+#### 3. توصية الدرس التالي (Recommended Next)
+- **API `/api/recommend-next`** — منطق ذكي:
+  1. **continue_track**: لو مستخدم عنده مسار غير مكتمل، يوصي بأول درس غير مكتمل فيه
+  2. **start_track**: لو مستخدم بدأ مسار بـ 0%، يوصي بأول درس
+  3. **new_track**: لو لا يوجد مسارات غير مكتملة، يوصي بأول درس من مسار جديد
+  4. **any_uncompleted**: لو كل المسارات بدأت، يوصي بأي درس غير مكتمل
+  5. **all_done**: لو كل شيء مكتمل، رسالة تهنئة
+  6. **first_ever**: لو مستخدم جديد، يوصي بأول درس من أول مسار (TypeScript)
+- **`RecommendedNextCard` component**:
+  - 6 أنواع توصيات بألوان وأيقونات مختلفة
+  - label متغيّر حسب النوع ("ابدأ هنا"، "تابع التعلّم"، "مسار جديد", إلخ)
+  - معاينة الدرس مع track icon + title + summary
+  - زر CTA ينقل للدرس مباشرة
+  - حالة "all_done" بتصميم احتفالي (amber gradient)
+
+#### 4. تحسينات التصميم
+- **Home page**: Daily Challenge + Recommended Next في grid 2 أعمدة (lg+)
+- **Search modal**: تصميم احترافي مع backdrop blur + spring animation
+- **TOC sidebar**: floating card مع backdrop-blur
+- **Recommended card**: gradient backgrounds حسب نوع التوصية
+
+### نتائج التحقق (QA via agent-browser)
+- ✅ `bun run lint` يجتاز بدون أخطاء
+- ✅ search API يجد 7 دروس لـ "useState" + 4 لـ "Prisma"
+- ✅ search modal يفتح بـ Ctrl+K وزر البحث
+- ✅ keyboard navigation يعمل (↑↓ Enter ESC)
+- ✅ النقر على نتيجة بحث ينقل للدرس
+- ✅ TOC يظهر في صفحة الدرس مع 4 أقسام
+- ✅ النقر على عنوان في TOC يمرر للقسم
+- ✅ recommend-next API يرجع `new_track` للدروس غير المبدوءة
+- ✅ RecommendedNextCard تعرض التوصية الصحيحة مع track icon + lesson
+- ✅ النقر على التوصية ينقل للدرس
+- ✅ لا أخطاء حديثة في سجل الـ dev server
+
+### مخاطر/أمور غير محلولة
+- **Search ranking**: ترتيب بسيط (title/summary/content). يمكن تحسينه بـ TF-IDF أو بحث نصي كامل (PostgreSQL FTS).
+- **TOC heading IDs**: يعتمد على ترتيب الـ DOM مطابق لترتيب الـ TOC. لو Markdown أضاف عناوين إضافية، قد يحدث mismatch.
+- **Recommend-next for new users**: يرجع أول درس من TypeScript دائمًا — يمكن جعله أكثر ذكاءً بناءً على اهتمامات المستخدم.
+
+### توصيات للمرحلة القادمة (الأولويات)
+1. **[عالٍ]** إضافة شهادة إكمال مسار (certificate) عند إكمال 100%
+2. **[عال]** إضافة "ملخص المسار" review page قبل الشهادة
+3. **[متوسط]** إضافة وضع تركيز (focus mode) للقراءة بدون إلهاء
+4. **[متوسط]** إضافة مؤثرات صوتية اختيارية عند ربح XP / شارة
+5. **[متوسط]** إضافة تصدير/استيراد التقدّم (JSON backup)
+6. **[منخفض]** إضافة دعم تعدد اللغات (عربي/إنجليزي)
+7. **[منخفض]** إضافة PWA support للعمل offline
+8. **[منخفض]** إضافة print styles للدروس
+

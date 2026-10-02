@@ -24,6 +24,7 @@ import { Markdown } from "./markdown";
 import { CodePlayground } from "./code-playground";
 import { ReadingProgress } from "./reading-progress";
 import { BookmarkButton } from "./bookmark-button";
+import { LessonTableOfContents } from "./lesson-toc";
 import { TrackIcon } from "./track-icon";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -267,6 +268,9 @@ export function LessonView({ lessonId }: { lessonId: string }) {
 
       {/* Lesson content */}
       <div className="container mx-auto px-4 sm:px-6 py-10 max-w-4xl">
+        {/* Table of contents (desktop floating + mobile collapsible) */}
+        <LessonTableOfContents content={lesson.content} />
+
         <Card className="p-6 sm:p-8 mb-6">
           <Markdown content={lesson.content} />
         </Card>
