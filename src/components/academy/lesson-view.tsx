@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight,
   ArrowLeft,
+  ChevronLeft,
   Clock,
   CheckCircle2,
   XCircle,
@@ -20,6 +21,7 @@ import { useUI } from "@/lib/store";
 import { useSessionId } from "@/hooks/use-session-id";
 import { Markdown } from "./markdown";
 import { CodePlayground } from "./code-playground";
+import { ReadingProgress } from "./reading-progress";
 import { TrackIcon } from "./track-icon";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -105,8 +107,17 @@ export function LessonView({ lessonId }: { lessonId: string }) {
       });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: { xpAwarded?: number }) => {
       queryClient.invalidateQueries({ queryKey: ["progress", sessionId] });
+      queryClient.invalidateQueries({ queryKey: ["xp", sessionId] });
+
+      // Show XP earned toast
+      if (data.xpAwarded && data.xpAwarded > 0) {
+        toast.success(`⚡ +${data.xpAwarded} نقطة خبرة!`, {
+          description: "إكمال درس",
+        });
+      }
+
       // Check for achievements
       fetch("/api/achievements", {
         method: "POST",
@@ -114,9 +125,10 @@ export function LessonView({ lessonId }: { lessonId: string }) {
         body: JSON.stringify({ sessionId }),
       })
         .then((r) => r.json())
-        .then((data: { newlyEarned: string[] }) => {
-          if (data.newlyEarned?.length) {
-            data.newlyEarned.forEach((slug) => {
+        .then((achData: { newlyEarned: string[] }) => {
+          if (achData.newlyEarned?.length) {
+            queryClient.invalidateQueries({ queryKey: ["xp", sessionId] });
+            achData.newlyEarned.forEach((slug) => {
               toast.success("🎉 ربحت شارة جديدة!", {
                 description: `شارة: ${slug}`,
               });
@@ -152,19 +164,41 @@ export function LessonView({ lessonId }: { lessonId: string }) {
 
   return (
     <div>
+      <ReadingProgress />
       {/* Lesson hero */}
       <section className={cn("relative overflow-hidden bg-hero border-b border-border/60")}>
         <div className="absolute inset-0 bg-grid opacity-30" />
         <div className="container relative mx-auto px-4 sm:px-6 py-8">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => openTrack(lesson.track.id)}
-            className="mb-5 -ms-2 gap-1.5 text-muted-foreground hover:text-foreground"
+          {/* Breadcrumb */}
+          <nav
+            className="flex items-center gap-1.5 mb-5 text-sm text-muted-foreground"
+            aria-label="مسار التنقل"
           >
-            <ArrowRight className="h-4 w-4" />
-            العودة للمسار: {lesson.track.title}
-          </Button>
+            <button
+              onClick={goHome}
+              className="hover:text-foreground transition-colors"
+            >
+              الرئيسية
+            </button>
+            <ChevronLeft className="h-3.5 w-3.5 opacity-50" />
+            <button
+              onClick={() => openTrack(lesson.track.id)}
+              className="hover:text-foreground transition-colors flex items-center gap-1.5"
+            >
+              <span
+                className={cn(
+                  "h-2 w-2 rounded-full",
+                  `track-${lesson.track.color}`,
+                  "bg-track"
+                )}
+              />
+              {lesson.track.title}
+            </button>
+            <ChevronLeft className="h-3.5 w-3.5 opacity-50" />
+            <span className="text-foreground font-medium truncate max-w-[200px]">
+              {lesson.title}
+            </span>
+          </nav>
 
           <div className="flex items-start gap-4">
             <div
@@ -365,6 +399,26 @@ function Quiz({
       setResult(data);
       setShowExplanations(true);
       queryClient.invalidateQueries({ queryKey: ["progress", sessionId] });
+      queryClient.invalidateQueries({ queryKey: ["xp", sessionId] });
+
+      // Show XP earned toast if any
+      if (data.xpAwarded && data.xpAwarded > 0) {
+        const breakdown = data.xpBreakdown as {
+          quizPass: number;
+          quizPerfect: number;
+          lessonComplete: number;
+          trackComplete: number;
+        } | undefined;
+        const reasons: string[] = [];
+        if (breakdown?.lessonComplete) reasons.push("إكمال درس");
+        if (breakdown?.quizPass) reasons.push("اجتياز اختبار");
+        if (breakdown?.quizPerfect) reasons.push("نتيجة كاملة");
+        if (breakdown?.trackComplete) reasons.push("إكمال مسار");
+        toast.success(`⚡ +${data.xpAwarded} نقطة خبرة!`, {
+          description: reasons.join(" · "),
+        });
+      }
+
       // Check for newly earned achievements after quiz submission
       fetch("/api/achievements", {
         method: "POST",
@@ -374,6 +428,7 @@ function Quiz({
         .then((r) => r.json())
         .then((ach: { newlyEarned: string[] }) => {
           if (ach.newlyEarned?.length) {
+            queryClient.invalidateQueries({ queryKey: ["xp", sessionId] });
             ach.newlyEarned.forEach(() => {
               toast.success("🎉 ربحت شارة جديدة!", {
                 description: "تحقّق من صفحة الإنجازات",

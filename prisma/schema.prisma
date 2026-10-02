@@ -152,3 +152,53 @@ model UserAchievement {
 
   @@unique([sessionId, achievementId])
 }
+
+/// نقاط الخبرة (XP) التي يربحها المستخدم
+model UserXP {
+  id        String   @id @default(cuid())
+  sessionId String   @unique
+  /// إجمالي النقاط
+  total     Int      @default(0)
+  /// عدد الدروس المكتملة (للحساب السريع)
+  lessonsCompleted Int @default(0)
+  /// عدد الاختبارات المجتازة
+  quizzesPassed Int @default(0)
+  /// عدد الشارات المكسوبة
+  badgesEarned Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  history   XPHistory[]
+}
+
+/// سجل نقاط الخبرة (كل حدث يكسب نقاطًا)
+model XPHistory {
+  id        String   @id @default(cuid())
+  userXPId  String
+  userXP    UserXP   @relation(fields: [userXPId], references: [id], onDelete: Cascade)
+  /// نوع الحدث: lesson_complete / quiz_pass / quiz_perfect / track_complete / badge_earn
+  action    String
+  /// عدد النقاط المربوحة
+  points    Int
+  /// معرّف الكيان المرتبط (lessonId, trackId, achievementSlug...)
+  refId     String?
+  /// تاريخ الحدث (يستخدم للـ heatmap)
+  earnedAt  DateTime @default(now())
+
+  @@index([earnedAt])
+}
+
+/// نشاط يومي للمستخدم (للـ heatmap)
+model DailyActivity {
+  id        String   @id @default(cuid())
+  sessionId String
+  /// التاريخ بصيغة YYYY-MM-DD
+  date      String
+  /// عدد الأحداث في ذلك اليوم
+  count     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, date])
+  @@index([sessionId, date])
+}

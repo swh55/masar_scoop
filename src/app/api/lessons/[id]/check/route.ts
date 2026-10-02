@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { awardXP } from "@/lib/xp";
 
 type CheckBody = {
   sessionId: string;
@@ -101,6 +102,35 @@ export async function POST(
     },
   });
 
+  // Award XP for quiz pass / perfect (idempotent via awardXP)
+  let quizXpAwarded = 0;
+  let perfectXpAwarded = 0;
+  let trackXpAwarded = 0;
+  let lessonXpAwarded = 0;
+  if (score >= 60) {
+    const quizXp = await awardXP(body.sessionId, "quiz_pass", id);
+    quizXpAwarded = quizXp.awarded;
+    // If quiz is passed, also award lesson completion XP (idempotent)
+    const lessonXp = await awardXP(body.sessionId, "lesson_complete", id);
+    lessonXpAwarded = lessonXp.awarded;
+  }
+  if (score === 100) {
+    const perfectXp = await awardXP(body.sessionId, "quiz_perfect", id);
+    perfectXpAwarded = perfectXp.awarded;
+  }
+  // Track completion XP
+  if (percent >= 100) {
+    const trackXp = await awardXP(
+      body.sessionId,
+      "track_complete",
+      lesson.trackId
+    );
+    trackXpAwarded = trackXp.awarded;
+  }
+
+  const totalXpAwarded =
+    quizXpAwarded + perfectXpAwarded + trackXpAwarded + lessonXpAwarded;
+
   return NextResponse.json({
     score,
     correctCount,
@@ -109,5 +139,12 @@ export async function POST(
     passed: score >= 60,
     lessonProgress,
     trackPercent: percent,
+    xpAwarded: totalXpAwarded,
+    xpBreakdown: {
+      quizPass: quizXpAwarded,
+      quizPerfect: perfectXpAwarded,
+      lessonComplete: lessonXpAwarded,
+      trackComplete: trackXpAwarded,
+    },
   });
 }

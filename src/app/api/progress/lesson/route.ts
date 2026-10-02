@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { awardXP } from "@/lib/xp";
 
 type Body = {
   sessionId: string;
@@ -19,6 +20,18 @@ export async function POST(request: Request) {
   }
 
   const completed = body.completed ?? true;
+
+  // Check existing progress to detect first-time completion
+  const existing = await db.lessonProgress.findUnique({
+    where: {
+      sessionId_lessonId: {
+        sessionId: body.sessionId,
+        lessonId: body.lessonId,
+      },
+    },
+  });
+  const wasCompleted = existing?.completed ?? false;
+
   await db.lessonProgress.upsert({
     where: {
       sessionId_lessonId: {
@@ -33,6 +46,13 @@ export async function POST(request: Request) {
       completed,
     },
   });
+
+  // Award XP only on first-time completion
+  let xpAwarded = 0;
+  if (completed && !wasCompleted) {
+    const xp = await awardXP(body.sessionId, "lesson_complete", body.lessonId);
+    xpAwarded = xp.awarded;
+  }
 
   // recompute track percent
   const trackLessons = await db.lesson.findMany({
@@ -65,5 +85,21 @@ export async function POST(request: Request) {
     },
   });
 
-  return NextResponse.json({ ok: true, trackPercent: percent });
+  // Award XP for track completion (first time only) — awardXP is idempotent
+  let trackXpAwarded = 0;
+  if (percent >= 100) {
+    const trackXp = await awardXP(
+      body.sessionId,
+      "track_complete",
+      lesson.trackId
+    );
+    trackXpAwarded = trackXp.awarded;
+  }
+
+  return NextResponse.json({
+    ok: true,
+    trackPercent: percent,
+    xpAwarded: xpAwarded + trackXpAwarded,
+  });
 }
+

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { awardXP } from "@/lib/xp";
 
 /**
  * Sync (check + award) achievements for a session based on current progress.
@@ -50,6 +51,8 @@ async function syncAchievements(sessionId: string): Promise<{
       await db.userAchievement.create({
         data: { sessionId, achievementId: a.id },
       });
+      // Award XP for badge earn (idempotent via awardXP)
+      await awardXP(sessionId, "badge_earn", a.slug);
       newlyEarned.push(a.slug);
     }
   }

@@ -4,6 +4,7 @@ import { GraduationCap, Menu, Trophy, BarChart3, Home, Flame } from "lucide-reac
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
+import { HeaderXPIndicator } from "./xp-indicator";
 import { useUI } from "@/lib/store";
 import { useStreak } from "@/hooks/use-streak";
 import { cn } from "@/lib/utils";
@@ -62,6 +63,9 @@ export function Header() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* XP level indicator */}
+          <HeaderXPIndicator />
 
           <Button
             variant={isActive("home") ? "secondary" : "ghost"}

@@ -17,6 +17,8 @@ import { useUI } from "@/lib/store";
 import { useSessionId } from "@/hooks/use-session-id";
 import { useStreak } from "@/hooks/use-streak";
 import { TrackIcon } from "./track-icon";
+import { XPCard } from "./xp-indicator";
+import { ActivityHeatmap } from "./activity-heatmap";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -104,6 +106,11 @@ export function ProgressView() {
         </div>
       </motion.div>
 
+      {/* XP & Level card */}
+      <div className="mb-6">
+        <XPCard />
+      </div>
+
       {/* Stats grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard
@@ -168,6 +175,11 @@ export function ProgressView() {
           </div>
         </div>
       </Card>
+
+      {/* Activity heatmap */}
+      <div className="mb-6">
+        <ActivityHeatmap />
+      </div>
 
       {/* Tracks progress */}
       <Card className="p-6 mb-6">

@@ -174,3 +174,107 @@ Task: مراجعة المشروع وإصلاح الأخطاء وإضافة مي�
 7. **[منخفض]** إضافة دعم تعدد اللغات (عربي/إنجليزي)
 8. **[منخفض]** تحسين الـ accessibility (keyboard navigation, screen reader labels)
 
+
+---
+
+## Task ID: 3
+Agent: Z.ai Code (cron review round 2)
+Task: مراجعة المشروع وإضافة نظام XP ونشاط وأحداث جديدة
+
+### الحالة الحالية للمشروع (تقييم)
+- ✅ المشروع مستقر ويعمل على المنفذ 3000
+- ✅ `bun run lint` يجتاز بدون أخطاء
+- ✅ جميع API routes تستجيب بـ 200
+- ✅ المحرر التفاعلي يعمل (اختبرناه على دروس TypeScript)
+- ✅ بحث وفلترة المسارات يعملان
+- ✅ نظام السلسلة اليومية يعمل
+- ✅ بطاقة "تابع التعلّم" تظهر بعد إكمال درس
+
+### الأهداف المنجزة في هذه الجولة
+
+#### 1. نظام XP / النقاط (gamification أعمق)
+- **قاعدة البيانات:** إضافة 3 نماذج جديدة إلى schema.prisma:
+  - `UserXP` — إجمالي النقاط + عدّادات سريعة (lessonsCompleted, quizzesPassed, badgesEarned)
+  - `XPHistory` — سجل كل حدث نقطة (مع refId للـ idempotency)
+  - `DailyActivity` — نشاط يومي للـ heatmap (sessionId + date + count)
+- **`/lib/xp.ts`** — منطق النقاط الكامل:
+  - `awardXP(sessionId, action, refId)` — idempotent (يتحقق من XPHistory)
+  - `getLevel(totalXP)` — منحنى تربيعي (Level N يحتاج 50*N*(N+1) XP)
+  - `getUserXPData(sessionId)` — يجلب الكل (نقاط، مستوى، تاريخ، نشاط يومي)
+  - عناوين المستويات بالعربية: مبتدئ → متعلّم → متمرّس → محرّر → محترف → خبير → معلّم → أسطورة → إله البرمجة
+- **نقاط الأحداث:**
+  - إكمال درس: +50 XP
+  - اجتياز اختبار (≥60%): +30 XP
+  - نتيجة كاملة (100%): +50 XP bonus
+  - إكمال مسار: +200 XP
+  - كسب شارة: +25 XP
+- **API endpoint `/api/xp`** — GET يجلب كل بيانات XP للمستخدم
+- **تحديث الـ endpoints الموجودة:**
+  - `/api/progress/lesson` POST — يمنح XP لإكمال الدرس + إكمال المسار
+  - `/api/lessons/[id]/check` POST — يمنح XP لاجتياز الاختبار + النتيجة الكاملة + إكمال الدرس + إكمال المسار
+  - `/api/achievements` POST — يمنح XP لكسب الشارة
+- **مكوّن `xp-indicator.tsx`:**
+  - `HeaderXPIndicator` — مؤشر مدمج في الـ Header (⚡ + نقاط + LV#) مع tooltip
+  - `XPCard` — بطاقة كاملة في صفحة التقدّم (level badge، progress bar، mini-stats)
+  - `XPEarnedPopup` — popup متحرك للنقاط المربوحة (جاهز للاستخدام)
+- **Toasts ذكية:** عند إكمال درس/اختبار، toast يظهر بـ "⚡ +N نقطة خبرة!" مع تفصيل الأسباب
+
+#### 2. خريطة نشاط الحرارة (Activity Heatmap)
+- **`activity-heatmap.tsx`** — تقويم نشاط بأسلوب GitHub:
+  - 12 أسبوعًا × 7 أيام (84 خلية)
+  - 5 مستويات ألوان (من رمادي فاتح إلى أخضر داكن)
+  - تسميات الأشهر في الأعلى + أيام الأسبوع على الجانب
+  - إحصائيات: أيام نشطة، إجمالي الأحداث
+  - تأثير hover (zoom + tooltip)
+  - تمييز اليوم الحالي بـ ring
+  - legend أسفل (أقل ← أكثر)
+  - يدعم RTL
+
+#### 3. تحسينات صفحة الدرس
+- **`reading-progress.tsx`** — شريط تقدّم القراءة في الأعلى (يتحرك مع scroll)
+- **Breadcrumb navigation** — الرئيسية > المسار > الدرس (قابل للنقر)
+- استبدال زر "العودة للمسار" القديم بـ breadcrumb أوضح
+
+#### 4. دروس جديدة (Tailwind track)
+- كان عند Tailwind درسان فقط، أضفت درسين:
+  - **"تخطيطات Flexbox و Grid المتقدمة"** — navbar, sidebar, dashboard, بطاقات
+  - **"ميزات متقدمة: Variants، Plugins، و Customization"** — group/peer, focus-visible, arbitrary values, container queries
+- الإجمالي الآن: **19 درس** (كان 17)، 19 اختبار
+
+#### 5. تحسينات التصميم
+- **XP card** بتصميم glassmorphism مع gradient + blobs
+- **Level badge** بحركة spring animation عند الظهور
+- **Progress bar متدرّج** (violet → fuchsia) مع pulse overlay
+- **Tooltip** في مؤشر الـ Header (يظهر عند hover)
+- **Heatmap cells** بحركة staggered عند التحميل
+- **Reading progress bar** متدرّج لاصق أعلى الصفحة
+
+### نتائج التحقق (QA via agent-browser)
+- ✅ `bun run lint` يجتاز بدون أخطاء
+- ✅ XP API يستجيب: `{"total":0,"level":1,"levelTitle":"مبتدئ",...}`
+- ✅ إكمال درس يمنح +50 XP (تحقق: 75 XP بعد درس + شارة)
+- ✅ اجتياز اختبار بنسبة 100% يمنح +130 XP (30+50+50)
+- ✅ المستوى يزيد: من Level 1 "مبتدئ" إلى Level 2 "متعلّم"
+- ✅ مؤشر XP في الـ Header يعرض "205 LV2"
+- ✅ بطاقة XP في صفحة التقدّم تعرض المستوى + النقاط + شريط التقدّم
+- ✅ Heatmap يعرض "1 أيام نشطة" و "5 إجمالي الأحداث"
+- ✅ Breadcrumb يعمل: الرئيسية > Tailwind CSS 4 > أساسيات Tailwind
+- ✅ شريط تقدّم القراءة يظهر أعلى صفحة الدرس
+- ✅ Tailwind track الآن يحتوي على 4 دروس
+- ✅ لا أخطاء في سجل الـ dev server
+
+### مخاطر/أمور غير محلولة
+- **Prisma Client caching**: عند تعديل schema، يجب إعادة تشغيل dev server لتحميل Prisma Client الجديد. تم حلها بإعادة التشغيل.
+- **XP idempotency**: يعتمد على refId — لو نفّذ نفس الدرس مرتين، لا يُمنح XP مرة ثانية (صحيح). لكن لو حُذف XPHistory، يمكن كسب XP مرة أخرى (مقبول للتطوير).
+- **Streak vs DB Activity**: السلسلة لا تزال في localStorage فقط، بينما DailyActivity في قاعدة البيانات. يفضل توحيدهما مستقبلاً.
+
+### توصيات للمرحلة القادمة (الأولويات)
+1. **[عالٍ]** إضافة "كيف أبدأ؟" onboarding flow تفاعلي للمستخدمين الجدد
+2. **[عالٍ]** إضافة "درس اليوم" / تحدي يومي على الصفحة الرئيسية
+3. **[متوسط]** نقل تتبع السلسلة لقاعدة البيانات (Activity model) لمزامنة الأجهزة
+4. **[متوسط]** إضافة جدول متصدّرين (leaderboard) — حتى لو وهمي للمستخدمين التجريبيين
+5. **[متوسط]** إضافة المزيد من الشارات (مثل: "أكمل 5 دروس في يوم"، "اجتاز 10 اختبارات"، "حقق 100% في 5 اختبارات")
+6. **[منخفض]** إضافة دعم تعدد اللغات (عربي/إنجليزي)
+7. **[منخفض]** تحسين الـ accessibility (keyboard navigation, screen reader labels)
+8. **[منخفض]** إضافة صفحة "المسار التعليمي الموصى به" بناءً على أهداف المستخدم
+

@@ -1596,6 +1596,434 @@ export function ThemeToggle() {
           ],
         },
       },
+      {
+        slug: "tailwind-flexbox-grid",
+        title: "تخطيطات Flexbox و Grid المتقدمة",
+        summary: "بناء تخطيطات معقدة: navbar، sidebar، dashboard، cards.",
+        content: `# تخطيطات Flexbox و Grid
+
+Tailwind يجعل بناء التخطيطات المعقدة سهلًا جدًا.
+
+## Flexbox — للتوزيع في بعد واحد
+
+\`\`\`html
+<!-- شريط تنقل -->
+<nav class="flex items-center justify-between p-4">
+  <div class="flex items-center gap-2">
+    <Logo />
+    <span class="font-bold">تطبيقي</span>
+  </div>
+  <div class="flex items-center gap-4">
+    <a href="/">الرئيسية</a>
+    <a href="/about">حول</a>
+    <button class="bg-primary text-white px-4 py-2 rounded-lg">دخول</button>
+  </div>
+</nav>
+\`\`\`
+
+### خصائص مهمة
+
+| الكلاس | الوظيفة |
+|-------|------|
+| \`flex\` | تفعيل flex container |
+| \`flex-col\` | اتجاه عمودي |
+| \`items-center\` | محاذاة عمودي |
+| \`justify-between\` | توزيع مع فراغ بين |
+| \`justify-center\` | توسيط |
+| \`gap-4\` | مسافة بين العناصر |
+| \`flex-1\` | يأخذ المساحة المتبقية |
+| \`flex-wrap\` | يلتف للسطر التالي |
+
+### بطاقات بأطوال متساوية
+
+\`\`\`html
+<div class="flex flex-wrap gap-4">
+  <div class="flex-1 min-w-[250px]">بطاقة 1</div>
+  <div class="flex-1 min-w-[250px]">بطاقة 2</div>
+  <div class="flex-1 min-w-[250px]">بطاقة 3</div>
+</div>
+\`\`\`
+
+\`min-w-[250px]\` يضمن ألا تصغر البطاقات عن 250px ثم تنتقل للسطر التالي.
+
+## CSS Grid — للتخطيطات ثنائية الأبعاد
+
+\`\`\`html
+<!-- شبكة 3 أعمدة -->
+<div class="grid grid-cols-3 gap-4">
+  <div>1</div><div>2</div><div>3</div>
+  <div>4</div><div>5</div><div>6</div>
+</div>
+
+<!-- responsive -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+  ...
+</div>
+\`\`\`
+
+### لوحة تحكم (Dashboard layout)
+
+\`\`\`html
+<div class="grid grid-cols-12 gap-4 min-h-screen">
+  <!-- Sidebar: 3 أعمدة على الكبير، يختفي على الصغير -->
+  <aside class="col-span-12 lg:col-span-3 hidden lg:block">
+    <Sidebar />
+  </aside>
+
+  <!-- Main: 9 أعمدة على الكبير، 12 على الصغير -->
+  <main class="col-span-12 lg:col-span-9">
+    <Header />
+    <Content />
+  </main>
+</div>
+\`\`\`
+
+### spanning أعمدة/صفوف
+
+\`\`\`html
+<div class="grid grid-cols-4 gap-4">
+  <div class="col-span-2">يأخذ عمودين</div>
+  <div>عمود</div>
+  <div>عمود</div>
+
+  <div class="col-span-4">يأخذ كل الأعمدة</div>
+  <div class="row-span-2">يأخذ صفين</div>
+  <div>1</div>
+  <div>2</div>
+  <div>3</div>
+  <div>4</div>
+  <div>5</div>
+</div>
+\`\`\`
+
+## أنماط شائعة
+
+### بطاقة منتج
+
+\`\`\`html
+<div class="rounded-2xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-shadow group">
+  <div class="aspect-video overflow-hidden bg-gray-100">
+    <img src="/product.jpg" class="group-hover:scale-105 transition-transform duration-300" />
+  </div>
+  <div class="p-4">
+    <h3 class="font-bold text-lg">اسم المنتج</h3>
+    <p class="text-sm text-gray-500 line-clamp-2">وصف قصير...</p>
+    <div class="flex items-center justify-between mt-3">
+      <span class="text-xl font-bold">$99</span>
+      <button class="bg-primary text-white px-3 py-1.5 rounded-lg text-sm">أضف للسلة</button>
+    </div>
+  </div>
+</div>
+\`\`\`
+
+### قائمة تعليقات
+
+\`\`\`html
+<div class="space-y-4">
+  <div class="flex gap-3">
+    <img class="h-10 w-10 rounded-full" src="/avatar.jpg" />
+    <div class="flex-1">
+      <div class="bg-muted rounded-2xl p-3">
+        <div class="font-medium text-sm">أحمد</div>
+        <p class="text-sm mt-1">تعليق رائع!</p>
+      </div>
+      <div class="text-xs text-muted-foreground mt-1 ps-3">منذ ساعتين</div>
+    </div>
+  </div>
+</div>
+\`\`\`
+
+## نصائح
+
+1. **استخدم gap بدل margin** بين عناصر flex/grid.
+2. **min-w-** يمنع الانضغاط المفرط.
+3. **line-clamp-N** لقص النص بعد N أسطر.
+4. **aspect-video / aspect-square** للنسب الثابتة.
+5. **container mx-auto** لتوسيط المحتوى.`,
+        codeExample: `// مكوّن بطاقة منتج بـ Tailwind
+export function ProductCard({ product }: { product: Product }) {
+  return (
+    <div className="group rounded-2xl overflow-hidden border border-border shadow-sm hover:shadow-lg transition-all hover:-translate-y-1">
+      <div className="aspect-video overflow-hidden bg-muted">
+        <img
+          src={product.image}
+          alt={product.name}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+        />
+      </div>
+      <div className="p-4">
+        <h3 className="font-bold text-lg line-clamp-1">{product.name}</h3>
+        <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+          {product.description}
+        </p>
+        <div className="flex items-center justify-between mt-4">
+          <span className="text-xl font-extrabold text-primary">
+            $\${product.price}
+          </span>
+          <button className="bg-primary text-primary-foreground px-3 py-1.5 rounded-lg text-sm hover:bg-primary/90">
+            أضف للسلة
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}`,
+        codeLanguage: "tsx",
+        order: 3,
+        duration: 22,
+        quiz: {
+          title: "اختبار: Flexbox و Grid",
+          questions: [
+            {
+              text: "أي كلاس يجعل العنصر يأخذ عمودين في Grid؟",
+              correctIndex: 2,
+              explanation: "col-span-2 يجعله يأخذ عمودين.",
+              choices: [
+                { text: "cols-2" },
+                { text: "col-2" },
+                { text: "col-span-2" },
+                { text: "span-2" },
+              ],
+            },
+            {
+              text: "كيف تمنع البطاقات من الانضغاط أكثر من اللازم؟",
+              correctIndex: 1,
+              explanation: "min-w-[Npx] يحدد عرضًا أدنى للعنصر.",
+              choices: [
+                { text: "width-fixed" },
+                { text: "min-w-[250px]" },
+                { text: "no-shrink" },
+                { text: "w-min-250" },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        slug: "tailwind-advanced",
+        title: "ميزات متقدمة: Variants، Plugins، و Customization",
+        summary: "group/peer، focus-visible، arbitrary values، و custom utilities.",
+        content: `# ميزات Tailwind المتقدمة
+
+## Variants المخصصة
+
+### group و peer — تخصيص بناءً على العنصر الأب/الأخ
+
+\`\`\`html
+<!-- group: التحكم بالعنصر الأب -->
+<div class="group">
+  <img class="group-hover:scale-110 transition-transform" />
+  <h3 class="group-hover:text-primary">عنوان</h3>
+</div>
+
+<!-- peer: التحكم بالأخ السابق -->
+<input type="checkbox" id="toggle" class="peer" />
+<div class="peer-checked:bg-primary peer-checked:text-white">
+  يظهر مختلفًا عند التحديد
+</div>
+\`\`\`
+
+### named groups
+
+\`\`\`html
+<div class="group/card hover:bg-muted">
+  <div class="group-hover/card:opacity-100 opacity-0">
+    يظهر عند hover على البطاقة فقط
+  </div>
+</div>
+\`\`\`
+
+## focus-visible — يظهر فقط عند التنقل بالكيبورد
+
+\`\`\`html
+<button class="focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+  زر
+</button>
+<!-- focus: يظهر دائمًا (حتى بالنقر)
+     focus-visible: فقط بالكيبورد -->
+\`\`\`
+
+## arbitrary values — قيم مخصصة
+
+\`\`\`html
+<!-- قيمة دقيقة -->
+<div class="w-[350px] h-[420px] bg-[#1e1e2e]">
+<div class="grid-cols-[200px_1fr_100px]"> <!-- 3 أعمدة بأحجام مخصصة -->
+<div class="top-[117px]"> <!-- position بدقة -->
+
+<!-- media queries مخصصة -->
+<div class="min-[1080px]:flex hidden">
+
+<!-- متغيّرات CSS -->
+<div style="--my-color: oklch(0.5 0.2 30)" class="bg-[var(--my-color)]">
+\`\`\`
+
+## Custom colors (في tailwind.config.ts)
+
+\`\`\`ts
+// tailwind.config.ts
+export default {
+  theme: {
+    extend: {
+      colors: {
+        brand: {
+          50: "#f0fdf4",
+          500: "#10b981",
+          900: "#064e3b",
+        },
+      },
+      fontFamily: {
+        arabic: ["Cairo", "sans-serif"],
+      },
+      animation: {
+        "fade-in": "fadeIn 0.5s ease-in",
+        "slide-up": "slideUp 0.3s ease-out",
+      },
+      keyframes: {
+        fadeIn: { "0%": { opacity: "0" }, "100%": { opacity: "1" } },
+        slideUp: {
+          "0%": { transform: "translateY(10px)", opacity: "0" },
+          "100%": { transform: "translateY(0)", opacity: "1" },
+        },
+      },
+    },
+  },
+};
+\`\`\`
+
+الاستخدام: \`bg-brand-500\`, \`font-arabic\`, \`animate-fade-in\`.
+
+## Plugins
+
+\`\`\`bash
+bun add -D @tailwindcss/typography @tailwindcss/forms @tailwindcss/aspect-ratio
+\`\`\`
+
+\`\`\`ts
+// tailwind.config.ts
+export default {
+  plugins: [
+    require("@tailwindcss/typography"), // prose classes
+    require("@tailwindcss/forms"),      // شكل افتراضي للـ inputs
+    require("@tailwindcss/aspect-ratio"),
+  ],
+};
+\`\`\`
+
+بعد ذلك:
+
+\`\`\`html
+<div class="prose prose-lg dark:prose-invert max-w-none">
+  <!-- محتوى Markdown -->
+</div>
+\`\`\`
+
+## Custom utilities (في Tailwind 4)
+
+في \`globals.css\`:
+
+\`\`\`css
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+\`\`\`
+
+## Container queries (ميزة حديثة)
+
+\`\`\`html
+<div class="@container">
+  <div class="@sm:flex hidden">
+    يظهر فقط عندما يكون الأب بعرض >= 24rem
+  </div>
+  <div class="@lg:grid-cols-2 grid">
+    شبكة من عمود واحد، تعمّد لعمودين عندما الأب >= 32rem
+  </div>
+</div>
+\`\`\`
+
+مفيدة لمكوّنات قابلة لإعادة الاستخدام — تتجاوب مع حجم الأب لا المتصفح.
+
+## نصائح للأداء
+
+1. **استخدم JIT** (افتراضي في Tailwind 4) — يُولّد فقط الكلاسات المستخدمة.
+2. **تجنب \`@apply\` المفرط** — يصعّب الصيانة.
+3. **استخدم PurgeCSS** إن لزم — يزيل الكلاسات غير المستخدمة.
+4. **cache-busting** — أضف hash لملف CSS في الإنتاج.`,
+        codeExample: `// مكوّن Input قابل لإعادة الاستخدام بـ Tailwind
+export function Input({
+  label,
+  error,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & {
+  label: string;
+  error?: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-sm font-medium text-foreground">
+        {label}
+      </label>
+      <input
+        {...props}
+        className={\`w-full rounded-lg border bg-background px-3 py-2 text-sm
+          transition-colors
+          focus:outline-none focus:ring-2 focus:ring-primary/20
+          focus:border-primary
+          \${error ? "border-rose-500" : "border-border"}
+          disabled:opacity-50 disabled:cursor-not-allowed\`}
+      />
+      {error && (
+        <p className="text-xs text-rose-500">{error}</p>
+      )}
+    </div>
+  );
+}`,
+        codeLanguage: "tsx",
+        order: 4,
+        duration: 25,
+        quiz: {
+          title: "اختبار: Tailwind المتقدمة",
+          questions: [
+            {
+              text: "ما الفرق بين focus و focus-visible؟",
+              correctIndex: 2,
+              explanation:
+                "focus يظهر دائمًا، focus-visible فقط عند التنقل بالكيبورد.",
+              choices: [
+                { text: "لا فرق" },
+                { text: "focus أحدث" },
+                {
+                  text: "focus-visible يظهر فقط بالكيبورد",
+                },
+                { text: "focus أسرع" },
+              ],
+            },
+            {
+              text: "ماذا يفعل peer-checked:bg-primary؟",
+              correctIndex: 1,
+              explanation:
+                "يطبّق bg-primary عندما العنصر الأخ السابق (peer) يكون checked.",
+              choices: [
+                { text: "يطبّق على كل العناصر" },
+                {
+                  text: "يطبّق عندما الأخ السابق يكون checked",
+                },
+                { text: "يطبّق على العنصر الأب" },
+                { text: "لا شيء" },
+              ],
+            },
+          ],
+        },
+      },
     ],
   },
 
