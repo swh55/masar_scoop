@@ -60,6 +60,10 @@ export function Footer() {
                 <kbd className="px-1.5 py-0.5 text-[10px] font-mono rounded border border-border bg-muted">T</kbd>
                 <span>الإنجازات</span>
               </li>
+              <li className="flex items-center gap-2">
+                <kbd className="px-1.5 py-0.5 text-[10px] font-mono rounded border border-border bg-muted">F</kbd>
+                <span>وضع التركيز (في الدرس)</span>
+              </li>
             </ul>
           </div>
         </div>

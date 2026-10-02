@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useUI } from "@/lib/store";
 import { useLevelUpTracker } from "@/hooks/use-level-up";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
+import { useFocusMode } from "@/hooks/use-focus-mode";
+import { FocusModeToggle } from "@/components/academy/focus-mode-toggle";
 import { Header } from "@/components/academy/header";
 import { Footer } from "@/components/academy/footer";
 import { HomeView } from "@/components/academy/home-view";
@@ -31,6 +33,7 @@ const queryClient = new QueryClient({
 function AcademyApp() {
   const { view, certificateTrackId, closeCertificate } = useUI();
   const { level, levelTitle, leveledUp, dismissLevelUp } = useLevelUpTracker();
+  const { isFocusMode } = useFocusMode();
   useKeyboardShortcuts();
 
   // Scroll to top on view change
@@ -38,8 +41,16 @@ function AcademyApp() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [view]);
 
+  // Auto-disable focus mode when leaving lesson view
+  useEffect(() => {
+    if (view.type !== "lesson" && sessionStorage.getItem("academy-focus-mode") === "true") {
+      sessionStorage.removeItem("academy-focus-mode");
+      window.dispatchEvent(new CustomEvent("focus-mode-change"));
+    }
+  }, [view]);
+
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className={`min-h-screen flex flex-col bg-background ${isFocusMode && view.type === "lesson" ? "focus-mode-active" : ""}`}>
       <Header />
       <main className="flex-1">
         {view.type === "home" && <HomeView />}
@@ -50,6 +61,12 @@ function AcademyApp() {
         {view.type === "bookmarks" && <BookmarksView />}
       </main>
       <Footer />
+      {/* Floating focus mode toggle — only on lesson view */}
+      {view.type === "lesson" && (
+        <div className="fixed bottom-6 start-6 z-40 print:hidden">
+          <FocusModeToggle />
+        </div>
+      )}
       <OnboardingModal />
       <GlobalSearch />
       <CertificateModal

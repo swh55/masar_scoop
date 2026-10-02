@@ -25,6 +25,7 @@ import { CodePlayground } from "./code-playground";
 import { ReadingProgress } from "./reading-progress";
 import { BookmarkButton } from "./bookmark-button";
 import { LessonTableOfContents } from "./lesson-toc";
+import { LessonRating } from "./lesson-rating";
 import { TrackIcon } from "./track-icon";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -319,6 +320,13 @@ export function LessonView({ lessonId }: { lessonId: string }) {
             lessonId={lesson.id}
             bestScore={lp?.bestScore ?? 0}
           />
+        )}
+
+        {/* Lesson rating — only show if lesson is completed */}
+        {isCompleted && (
+          <div className="mb-6">
+            <LessonRating lessonId={lesson.id} />
+          </div>
         )}
 
         {/* Mark complete + navigation */}

@@ -185,6 +185,26 @@
 
 
 @layer utilities {
+  /* Focus mode — distraction-free reading */
+  .focus-mode-active header,
+  .focus-mode-active footer,
+  .focus-mode-active aside {
+    display: none !important;
+  }
+  .focus-mode-active main {
+    padding-top: 2rem !important;
+  }
+  .focus-mode-active .reading-progress-bar {
+    top: 0 !important;
+  }
+
+  /* Smooth transitions for focus mode toggle */
+  header,
+  footer,
+  aside {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
   /* Track color helpers (since we store color as a string) */
   .track-sky { --track-color: oklch(0.62 0.18 230); }
   .track-rose { --track-color: oklch(0.62 0.22 15); }

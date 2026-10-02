@@ -811,3 +811,96 @@ Task: مراجعة وإضافة شهادات إتمام المسارات + طب�
 7. **[منخفض]** إضافة تصدير/استيراد التقدّم (JSON backup)
 8. **[منخفض]** إضافة PWA support للعمل offline
 
+
+---
+
+## Task ID: 9
+Agent: Z.ai Code (cron review round 8)
+Task: مراجعة وإضافة وضع التركيز + نظام تقييم الدروس بالنجوم
+
+### الحالة الحالية للمشروع (تقييم)
+- ✅ المشروع مستقر ويعمل على المنفذ 3000
+- ✅ `bun run lint` يجتاز بدون أخطاء
+- ✅ XP system يعمل (815 XP, Level 4 "محرّر")
+- ✅ 23 درسًا عبر 6 مسارات
+- ✅ نظام الشهادات يعمل (1 شهادة TypeScript مكتسبة)
+- ✅ لا أخطاء حديثة في سجل الـ dev server
+
+### الأهداف المنجزة في هذه الجولة
+
+#### 1. وضع التركيز للقراءة (Focus Mode)
+- **`use-focus-mode.ts` hook** — استخدام `useSyncExternalStore`:
+  - يقرأ/يكتب `sessionStorage` للحالة
+  - `subscribe` عبر `CustomEvent("focus-mode-change")`
+  - API: `isFocusMode`, `toggle`, `enable`, `disable`
+- **`FocusModeToggle` component** — زر عائم:
+  - يظهر في أسفل يسار الشاشة فقط في صفحة الدرس
+  - أيقونة `Maximize2` / `Minimize2` مع animation
+  - نص يتغيّر: "وضع التركيز" / "إنهاء التركيز"
+  - لون يتغيّر: primary عند التفعيل
+- **CSS في `globals.css`** (داخل `@layer utilities`):
+  - `.focus-mode-active header, footer, aside { display: none !important }`
+  - `.focus-mode-active main { padding-top: 2rem }`
+  - transitions ناعمة على header/footer/aside
+- **التكامل في `page.tsx`**:
+  - class `focus-mode-active` يُضاف على wrapper عند التفعيل + `view.type === "lesson"`
+  - auto-disable عند مغادرة صفحة الدرس
+  - زر FocusModeToggle عائم `fixed bottom-6 start-6`
+- **اختصارات لوحة المفاتيح**:
+  - `F` — تبديل وضع التركيز (فقط في صفحة الدرس)
+  - `ESC` — إنهاء وضع التركيز
+- **Footer** — أضفت `F` إلى قائمة الاختصارات
+
+#### 2. نظام تقييم الدروس (Lesson Ratings)
+- **قاعدة البيانات**: `LessonRating` model (sessionId, lessonId, rating 1-5, feedback?)
+  - `@@unique([sessionId, lessonId])` — تقييم واحد لكل مستخدم لكل درس
+  - `@@index([lessonId])` — للاستعلام السريع عن إحصائيات الدرس
+  - علاقة `ratings` على `Lesson`
+- **API `/api/ratings`**:
+  - GET: يجلب متوسط التقييم، العدد، التوزيع، تقييم المستخدم الحالي
+  - POST: upsert (إنشاء أو تحديث) تقييم المستخدم
+- **`LessonRating` component**:
+  - 5 نجوم تفاعلية مع hover animation (spring)
+  - عرض تقييم المستخدم الحالي ("تقييمك: 5 / 5 نجوم")
+  - زر "أضف تعليقًا" يفتح textarea
+  - textarea مع عداد أحرف (500 max)
+  - أزرار إرسال/إلغاء
+  - **توزيع التقييمات** — bars أفقية تظهر عدد كل تقييم (1★ to 5★)
+  - متوسط التقييم مع عدد المقيّمين
+  - toast تأكيد "شكرًا لتقييمك! 🌟"
+  - يظهر فقط للدروس المكتملة
+  - gradient header بـ amber theme + blur blob
+
+### نتائج التحقق (QA via agent-browser)
+- ✅ `bun run lint` يجتاز بدون أخطاء
+- ✅ زر "تفعيل وضع التركيز" يظهر في صفحة الدرس
+- ✅ النقر على الزر يخفي الـ header (`display: none`)
+- ✅ النقر على الزر يخفي الـ footer (`display: none`)
+- ✅ `ESC` يخرج من وضع التركيز ويعيد الـ header
+- ✅ زر FocusModeToggle يختفي عند مغادرة صفحة الدرس
+- ✅ `F` key يبدّل وضع التركيز
+- ✅ Footer يعرض اختصار `F`
+- ✅ قسم "قيّم هذا الدرس" يظهر للدروس المكتملة
+- ✅ 5 نجوم تفاعلية مع hover animation
+- ✅ النقر على 5 نجوم يحفظ التقييم + toast "شكرًا لتقييمك! 🌟"
+- ✅ "تقييمك: 5 / 5 نجوم" يظهر بعد التقييم
+- ✅ زر "أضف تعليقًا" يفتح textarea
+- ✅ كتابة تعليق + إرسال يحفظه في قاعدة البيانات
+- ✅ ratings API يرجع: average=5, count=1, userRating=5, feedback="درس ممتاز وشرح واضح!"
+- ✅ لا أخطاء حديثة في سجل الـ dev server
+
+### مخاطر/أمور غير محلولة
+- **Focus mode CSS**: كان يجب وضع CSS داخل `@layer utilities` بدل خارجه — Tailwind CSS 4 لا يحمّل CSS المخصص خارج الـ layers.
+- **Rating visibility**: التقييم يظهر فقط للدروس المكتملة — قد يريد بعض المستخدمين تقييم قبل الإكمال.
+- **Rating anonymity**: التقييمات مرتبطة بـ sessionId المجهول — لا توجد أسماء مستخدمين.
+
+### توصيات للمرحلة القادمة (الأولويات)
+1. **[عالٍ]** إضافة QR code للشهادة للتحقق من صحتها
+2. **[عال]** إضافة "ملخص المسار" review page قبل عرض الشهادة
+3. **[متوسط]** إضافة مؤثرات صوتية اختيارية عند ربح XP / شارة
+4. **[متوسط]** إضافة تصدير/استيراد التقدّم (JSON backup)
+5. **[متوسط]** إضافة PWA support للعمل offline
+6. **[منخفض]** إضافة دعم تعدد اللغات (عربي/إنجليزي)
+7. **[منخفض]** إضافة dark/light theme toggle في الـ onboarding
+8. **[منخفض]** إضافة إشعارات المتصفح (push notifications) للتذكير اليومي
+
