@@ -15,8 +15,11 @@ export async function GET(request: Request) {
   const sessionId = searchParams.get("sessionId");
 
   // Get all published lessons with their track info
+  // IMPORTANT: orderBy id asc to match the isTodayDailyChallenge check in the
+  // lesson-check endpoint, so both pick the same lesson for the same date.
   const lessons = await db.lesson.findMany({
     where: { published: true },
+    orderBy: { id: "asc" },
     select: {
       id: true,
       slug: true,

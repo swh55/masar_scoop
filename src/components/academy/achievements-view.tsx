@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
-import { Trophy, Lock, Sparkles, Footprints, GraduationCap, Languages, Award } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Trophy, Lock, Sparkles, Footprints, GraduationCap, Languages, Award, X } from "lucide-react";
 import { useSessionId } from "@/hooks/use-session-id";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { AchievementProgressCard } from "./achievement-progress-card";
 import { cn } from "@/lib/utils";
 
 type Achievement = {
@@ -33,6 +36,7 @@ function useSessionIdLocal() {
 
 export function AchievementsView() {
   const sessionId = useSessionIdLocal();
+  const [selected, setSelected] = useState<Achievement | null>(null);
 
   const { data: achievements } = useQuery<Achievement[]>({
     queryKey: ["achievements"],
@@ -120,64 +124,132 @@ export function AchievementsView() {
 
       {/* Achievements grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {achievements?.map((a, idx) => {
-          const Icon = ICON_MAP[a.icon] ?? Trophy;
-          return (
-            <motion.div
-              key={a.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, delay: idx * 0.05 }}
-            >
-              <Card
-                className={cn(
-                  "p-6 h-full border-border/60 transition-all relative overflow-hidden",
-                  a.earned
-                    ? "border-amber-500/30 bg-gradient-to-br from-amber-50/50 to-transparent dark:from-amber-950/20"
-                    : "opacity-70"
-                )}
-              >
-                {a.earned && (
-                  <div className="absolute -top-8 -left-8 h-24 w-24 rounded-full bg-amber-500/10 blur-2xl" />
-                )}
-                <div className="relative">
-                  <div
-                    className={cn(
-                      "flex h-14 w-14 items-center justify-center rounded-2xl mb-4 ring-1",
-                      a.earned
-                        ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 ring-amber-500/20"
-                        : "bg-muted text-muted-foreground ring-border"
-                    )}
-                  >
-                    {a.earned ? (
-                      <Icon className="h-7 w-7" />
-                    ) : (
-                      <Lock className="h-6 w-6" />
-                    )}
-                  </div>
-
-                  <h3 className="font-bold text-lg mb-1">{a.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-                    {a.description}
-                  </p>
-
-                  {a.earned ? (
-                    <Badge className="gap-1 bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0">
-                      <Sparkles className="h-3 w-3" />
-                      مكسوبة
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="gap-1 text-muted-foreground">
-                      <Lock className="h-3 w-3" />
-                      مقفلة
-                    </Badge>
-                  )}
-                </div>
-              </Card>
-            </motion.div>
-          );
-        })}
+        {achievements?.map((a, idx) => (
+          <motion.div
+            key={a.id}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: idx * 0.05 }}
+          >
+            <AchievementProgressCard
+              achievement={a}
+              onOpen={() => setSelected(a)}
+            />
+          </motion.div>
+        ))}
       </div>
+
+      {/* Detail modal */}
+      <AnimatePresence>
+        {selected && (
+          <AchievementDetailModal
+            achievement={selected}
+            onClose={() => setSelected(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
+  );
+}
+
+function AchievementDetailModal({
+  achievement,
+  onClose,
+}: {
+  achievement: Achievement;
+  onClose: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <motion.div
+        initial={{ scale: 0.92, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.92, opacity: 0, y: 20 }}
+        transition={{ type: "spring", stiffness: 200, damping: 25 }}
+        className="relative w-full max-w-md overflow-hidden rounded-3xl border border-border bg-card shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header gradient */}
+        <div
+          className={cn(
+            "relative h-32 overflow-hidden flex items-center justify-center",
+            achievement.earned
+              ? "bg-gradient-to-br from-amber-400 to-orange-500"
+              : "bg-gradient-to-br from-muted-foreground/30 to-muted-foreground/50"
+          )}
+        >
+          <div className="absolute inset-0 bg-grid opacity-20" />
+          <motion.div
+            aria-hidden
+            className="absolute -top-8 -left-8 h-32 w-32 rounded-full bg-white/20 blur-2xl"
+            animate={{ x: [0, 20, 0], y: [0, -10, 0] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <button
+            onClick={onClose}
+            className="absolute top-3 end-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/20 text-white hover:bg-black/40 transition-colors"
+            aria-label="إغلاق"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <motion.div
+            initial={{ scale: 0, rotate: -30 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 200, delay: 0.1 }}
+            className="text-6xl"
+          >
+            {achievement.earned ? "🏆" : "🔒"}
+          </motion.div>
+        </div>
+
+        {/* Body */}
+        <div className="p-6">
+          <div className="flex items-center gap-2 mb-2">
+            <h2 className="text-2xl font-extrabold">{achievement.title}</h2>
+            {achievement.earned && (
+              <Sparkles className="h-5 w-5 text-amber-500" />
+            )}
+          </div>
+          <p className="text-muted-foreground leading-relaxed mb-5">
+            {achievement.description}
+          </p>
+
+          <AchievementProgressCard achievement={achievement} />
+
+          {achievement.earned && achievement.earnedAt && (
+            <div className="mt-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 p-3 text-sm text-amber-700 dark:text-amber-400 text-center">
+              🎉 مكسوبة في{" "}
+              {new Date(achievement.earnedAt).toLocaleDateString("ar-EG", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </div>
+          )}
+
+          {!achievement.earned && (
+            <p className="mt-4 text-xs text-muted-foreground text-center">
+              استمر في التعلّم — كل درس واختبار يقربك من هذه الشارة!
+            </p>
+          )}
+
+          <Button
+            onClick={onClose}
+            variant="outline"
+            className="w-full mt-5"
+          >
+            إغلاق
+          </Button>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }

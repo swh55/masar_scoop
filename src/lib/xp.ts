@@ -24,13 +24,16 @@ export type XPAction = keyof typeof XP_RULES;
 /**
  * Award XP for an action. Idempotent — checks XPHistory to avoid
  * awarding the same action twice for the same refId.
+ * Optional `multiplier` scales the points (e.g. 2 for daily challenge bonus).
  */
 export async function awardXP(
   sessionId: string,
   action: XPAction,
-  refId?: string
+  refId?: string,
+  multiplier = 1
 ): Promise<{ awarded: number; total: number; is_new: boolean }> {
-  const points = XP_RULES[action];
+  const basePoints = XP_RULES[action];
+  const points = Math.round(basePoints * multiplier);
 
   // Check if this exact action+refId was already awarded
   const existing = await db.xPHistory.findFirst({

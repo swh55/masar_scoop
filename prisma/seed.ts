@@ -822,6 +822,425 @@ export function SearchBar() {
           ],
         },
       },
+      {
+        slug: "react-context",
+        title: "Context API و إدارة الحالة العامة",
+        summary: "مشاركة البيانات بين المكوّنات بدون prop drilling.",
+        content: `# Context API
+
+الـ Context يتيح مشاركة البيانات بين المكوّنات بدون تمرير props عبر كل مستوى (prop drilling).
+
+## متى تستخدم Context؟
+
+- الثيم (theme)، اللغة (locale)، المستخدم الحالي
+- بيانات لا تتغيّر كثيرًا وتُستخدم في أماكن كثيرة
+- لا تستخدمه لكل شيء — الحالة المحلية أفضل للأشياء المعزولة
+
+## إنشاء Context
+
+\`\`\`tsx
+import { createContext, useContext, useState, type ReactNode } from "react";
+
+type User = { id: string; name: string } | null;
+
+type UserContextValue = {
+  user: User;
+  login: (user: NonNullable<User>) => void;
+  logout: () => void;
+};
+
+const UserContext = createContext<UserContextValue | undefined>(undefined);
+
+// المزوّد (Provider)
+export function UserProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User>(null);
+  return (
+    <UserContext.Provider value={{
+      user,
+      login: setUser,
+      logout: () => setUser(null),
+    }}>
+      {children}
+    </UserContext.Provider>
+  );
+}
+
+// hook مخصّص للقراءة
+export function useUser() {
+  const ctx = useContext(UserContext);
+  if (!ctx) throw new Error("useUser must be used within UserProvider");
+  return ctx;
+}
+\`\`\`
+
+## الاستخدام
+
+\`\`\`tsx
+// app/layout.tsx
+import { UserProvider } from "./user-context";
+
+export default function RootLayout({ children }) {
+  return <UserProvider>{children}</UserProvider>;
+}
+
+// أي مكوّن
+function Profile() {
+  const { user, logout } = useUser();
+  if (!user) return <p>غير مسجّل</p>;
+  return <button onClick={logout}>خروج ({user.name})</button>;
+}
+\`\`\`
+
+## أمثلة شائعة
+
+### Context للثيم
+
+\`\`\`tsx
+const ThemeContext = createContext<"light" | "dark">("light");
+
+function App() {
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  return (
+    <ThemeContext.Provider value={theme}>
+      <button onClick={() => setTheme(t => t === "light" ? "dark" : "light")}>
+        تبديل
+      </button>
+      <Content />
+    </ThemeContext.Provider>
+  );
+}
+
+function Content() {
+  const theme = useContext(ThemeContext);
+  return <div className={theme === "dark" ? "dark" : ""}>محتوى</div>;
+}
+\`\`\`
+
+## مشكلة الأداء
+
+عندما يتغيّر قيمة الـ Context، كل المستهلكين يعيدون التصيير:
+
+\`\`\`tsx
+// ❌ سيء: كل تغيير في user يعيد تصيير كل شيء
+<UserContext.Provider value={{ user, login, logout }}>
+
+// ✅ أفضل: افصل القيم المتغيّرة عن الثوابت
+const [user, setUser] = useState(null);
+const value = useMemo(() => ({ user, login: setUser, logout: () => setUser(null) }), [user]);
+\`\`\`
+
+## متى تنتقل لـ Zustand/Redux؟
+
+- Context مناسب للحالة منخفضة التغيّر (ثيم، مستخدم)
+- للحالة عالية التغيّر (counters، carts) — استخدم Zustand/Redux
+- أو استخدم useReducer داخل الـ Context
+
+\`\`\`tsx
+const [state, dispatch] = useReducer(reducer, initialState);
+\`\`\``,
+        codeExample: `"use client";
+import { createContext, useContext, useState, type ReactNode } from "react";
+
+type CartContextValue = {
+  items: { id: string; name: string; qty: number }[];
+  add: (item: { id: string; name: string }) => void;
+  remove: (id: string) => void;
+};
+
+const CartContext = createContext<CartContextValue | undefined>(undefined);
+
+export function CartProvider({ children }: { children: ReactNode }) {
+  const [items, setItems] = useState<CartContextValue["items"]>([]);
+
+  const value: CartContextValue = {
+    items,
+    add: (item) =>
+      setItems((prev) => {
+        const existing = prev.find((i) => i.id === item.id);
+        if (existing) {
+          return prev.map((i) =>
+            i.id === item.id ? { ...i, qty: i.qty + 1 } : i
+          );
+        }
+        return [...prev, { ...item, qty: 1 }];
+      }),
+    remove: (id) => setItems((prev) => prev.filter((i) => i.id !== id)),
+  };
+
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+}
+
+export function useCart() {
+  const ctx = useContext(CartContext);
+  if (!ctx) throw new Error("useCart must be used within CartProvider");
+  return ctx;
+}`,
+        codeLanguage: "tsx",
+        order: 4,
+        duration: 22,
+        quiz: {
+          title: "اختبار: Context API",
+          questions: [
+            {
+              text: "ما المشكلة التي يحلها Context؟",
+              correctIndex: 1,
+              explanation: "منع تمرير props عبر مستويات كثيرة (prop drilling).",
+              choices: [
+                { text: "تحسين الأداء" },
+                {
+                  text: "منع prop drilling",
+                },
+                { text: "تشفير البيانات" },
+                { text: "استبدال useState" },
+              ],
+            },
+            {
+              text: "متى تنتقل من Context إلى Zustand؟",
+              correctIndex: 2,
+              explanation: "عندما تكون الحالة عالية التغيّر، Context يسبب إعادة تصيير كثيرة.",
+              choices: [
+                { text: "أبدًا" },
+                { text: "عند وجود بيانات" },
+                {
+                  text: "عند الحالة عالية التغيّر",
+                },
+                { text: "عند الـ SSR" },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        slug: "react-patterns",
+        title: "أنماط React المتقدمة",
+        summary: "compound components، render props، custom hooks، و code splitting.",
+        content: `# أنماط React المتقدمة
+
+## 1. Custom Hooks — استخراج المنطق القابل لإعادة الاستخدام
+
+\`\`\`tsx
+// hooks/use-local-storage.ts
+export function useLocalStorage<T>(key: string, initial: T) {
+  const [value, setValue] = useState<T>(initial);
+
+  // تحميل من localStorage عند التحميل
+  useEffect(() => {
+    const stored = localStorage.getItem(key);
+    if (stored) setValue(JSON.parse(stored));
+  }, [key]);
+
+  // حفظ عند التغيّر
+  const update = (newValue: T) => {
+    setValue(newValue);
+    localStorage.setItem(key, JSON.stringify(newValue));
+  };
+
+  return [value, update] as const;
+}
+
+// الاستخدام
+const [name, setName] = useLocalStorage("name", "");
+\`\`\`
+
+## 2. Compound Components — مكوّنات مترابطة
+
+\`\`\`tsx
+function Select({ children, value, onChange }) {
+  return <div className="select">{children}</div>;
+}
+
+function SelectTrigger({ children }) { return <button>{children}</button>; }
+function SelectContent({ children }) { return <div className="dropdown">{children}</div>; }
+function SelectItem({ value, children }) { return <option value={value}>{children}</option>; }
+
+// الاستخدام — مرونة كاملة
+<Select>
+  <SelectTrigger>اختر فاكهة</SelectTrigger>
+  <SelectContent>
+    <SelectItem value="apple">تفاح</SelectItem>
+    <SelectItem value="banana">موز</SelectItem>
+  </SelectContent>
+</Select>
+\`\`\`
+
+## 3. Render Props — مشاركة منطق عبر دالة
+
+\`\`\`tsx
+function MouseTracker({ render }) {
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  return (
+    <div onMouseMove={(e) => setPos({ x: e.clientX, y: e.clientY })}>
+      {render(pos)}
+    </div>
+  );
+}
+
+// الاستخدام
+<MouseTracker render={(pos) => <p>X: {pos.x}, Y: {pos.y}</p>} />
+\`\`\`
+
+اليوم، الـ hooks حلت محل هذه الأنماط في معظم الحالات.
+
+## 4. Higher-Order Components (HOCs) — قديم لكن مهم
+
+\`\`\`tsx
+function withAuth<P>(Component: React.ComponentType<P>) {
+  return function AuthWrapper(props: P) {
+    const { user } = useUser();
+    if (!user) return <p>سجّل الدخول أولاً</p>;
+    return <Component {...props} />;
+  };
+}
+
+const ProtectedPage = withAuth(MyPage);
+\`\`\`
+
+## 5. Lazy Loading و Code Splitting
+
+\`\`\`tsx
+import { lazy, Suspense } from "react";
+
+// تحميل كسول — لا يُحمّل إلا عند الحاجة
+const HeavyChart = lazy(() => import("./HeavyChart"));
+
+function App() {
+  return (
+    <Suspense fallback={<div>جارٍ التحميل...</div>}>
+      <HeavyChart data={...} />
+    </Suspense>
+  );
+}
+\`\`\`
+
+### dynamic import في Next.js
+
+\`\`\`tsx
+import dynamic from "next/dynamic";
+
+const Editor = dynamic(() => import("./Editor"), {
+  loading: () => <div>جارٍ تحميل المحرر...</div>,
+  ssr: false, // تحميل في المتصفح فقط
+});
+\`\`\`
+
+## 6. Error Boundaries
+
+\`\`\`tsx
+class ErrorBoundary extends React.Component<
+  { fallback: ReactNode; children: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, info) {
+    console.error("خطأ:", error, info);
+  }
+
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
+}
+
+// الاستخدام
+<ErrorBoundary fallback={<p>حدث خطأ 😢</p>}>
+  <ComponentThatMightCrash />
+</ErrorBoundary>
+\`\`\`
+
+## 7. Forwarding refs
+
+\`\`\`tsx
+const MyInput = forwardRef<HTMLInputElement, Props>((props, ref) => {
+  return <input ref={ref} {...props} />;
+});
+
+// الاستخدام
+const inputRef = useRef<HTMLInputElement>(null);
+<MyInput ref={inputRef} />;
+\`\`\`
+
+## نصائح عامة
+
+1. **ابدأ ببساطة** — استخدم useState و props فقط حتى تحتاج لغيرها.
+2. **استخرج custom hooks** للمنطق المتكرر.
+3. **استخدم composition** بدل الوراثة.
+4. **profile قبل التحسين** — لا تحسّن ما لا تحتاج.
+5. **keue component small** — مكوّن واحد = مسؤولية واحدة.`,
+        codeExample: `"use client";
+import { useEffect, useState } from "react";
+
+// Custom hook: useDebounce
+export function useDebounce<T>(value: T, delay = 300): T {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+
+  return debounced;
+}
+
+// الاستخدام: بحث مؤجّل
+function SearchBox() {
+  const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 500);
+
+  useEffect(() => {
+    if (debouncedQuery) {
+      // fetch(\`/api/search?q=\${debouncedQuery}\`)
+      console.log("بحث عن:", debouncedQuery);
+    }
+  }, [debouncedQuery]);
+
+  return (
+    <input
+      value={query}
+      onChange={(e) => setQuery(e.target.value)}
+      placeholder="اكتب للبحث..."
+    />
+  );
+}`,
+        codeLanguage: "tsx",
+        order: 5,
+        duration: 28,
+        quiz: {
+          title: "اختبار: أنماط React",
+          questions: [
+            {
+              text: "ما فائدة custom hooks؟",
+              correctIndex: 1,
+              explanation: "استخراج المنطق القابل لإعادة الاستخدام من المكوّنات.",
+              choices: [
+                { text: "تحسين الأداء" },
+                {
+                  text: "استخراج منطق قابل لإعادة الاستخدام",
+                },
+                { text: "إضافة CSS" },
+                { text: "استبدال useState" },
+              ],
+            },
+            {
+              text: "ماذا يفعل lazy loading؟",
+              correctIndex: 1,
+              explanation: "يؤجّل تحميل الكود حتى الحاجة إليه، يقلل حجم الحزمة الأولية.",
+              choices: [
+                { text: "يبطئ التطبيق" },
+                {
+                  text: "يقلل حجم الحزمة الأولية بتأجيل التحميل",
+                },
+                { text: "يضيف أنواعًا" },
+                { text: "ينشئ SSR" },
+              ],
+            },
+          ],
+        },
+      },
     ],
   },
 
@@ -1268,6 +1687,484 @@ export function TodoList() {
                 { text: "Cache ذكي وإدارة حالة الخادم" },
                 { text: "مكتبة CSS" },
                 { text: "أداة نشر" },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        slug: "nextjs-deployment",
+        title: "النشر والتحسين للإنتاج",
+        summary: "SEO، metadata، sitemap، robots، Vercel، self-host.",
+        content: `# النشر والتحسين في Next.js
+
+## Metadata و SEO
+
+في App Router، استخدم \`Metadata\` API بدل \`<head>\` يدوي:
+
+\`\`\`tsx
+// app/layout.tsx
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: {
+    default: "أكاديمية البرمجة",
+    template: "%s | أكاديمية البرمجة",
+  },
+  description: "تعلّم تطوير الويب الحديث",
+  keywords: ["Next.js", "React", "TypeScript"],
+  authors: [{ name: "Z.ai" }],
+  openGraph: {
+    title: "أكاديمية البرمجة",
+    description: "تعلّم تطوير الويب",
+    type: "website",
+    locale: "ar",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
+};
+\`\`\`
+
+### Metadata ديناميكي لكل صفحة
+
+\`\`\`tsx
+// app/blog/[slug]/page.tsx
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const post = await getPost(params.slug);
+  return {
+    title: post.title,
+    description: post.excerpt,
+    openGraph: {
+      images: [post.coverImage],
+    },
+  };
+}
+\`\`\`
+
+## Sitemap و robots.txt
+
+\`\`\`tsx
+// app/sitemap.ts
+export default async function sitemap() {
+  const posts = await getPosts();
+  return [
+    { url: "https://example.com", lastModified: new Date() },
+    ...posts.map((p) => ({
+      url: \`https://example.com/blog/\${p.slug}\`,
+      lastModified: p.updatedAt,
+    })),
+  ];
+}
+
+// app/robots.ts
+export default function robots() {
+  return {
+    rules: { userAgent: "*", allow: "/", disallow: ["/api/"] },
+    sitemap: "https://example.com/sitemap.xml",
+  };
+}
+\`\`\`
+
+## وضع الإنتاج (Production)
+
+\`\`\`bash
+# بناء التطبيق
+bun run build
+
+# تشغيل في وضع الإنتاج
+bun run start
+
+# أو على Vercel
+vercel
+\`\`\`
+
+### متغيّرات البيئة
+
+\`\`\`bash
+# .env.local (تطوير)
+DATABASE_URL="file:./dev.db"
+
+# .env.production
+DATABASE_URL="postgresql://..."
+
+# متغيّرات عمومية للعميل
+NEXT_PUBLIC_API_URL="https://api.example.com"
+\`\`\`
+
+## Vercel — أبسط طريقة للنشر
+
+1. ارفع مشروعك لـ GitHub
+2. اربطه بـ Vercel
+3. أضف متغيّرات البيئة
+4. Deploy — كل push ينشئ preview + production تلقائيًا
+
+\`\`\`bash
+npm i -g vercel
+vercel  # preview deploy
+vercel --prod  # production deploy
+\`\`\`
+
+## Self-hosting (Docker)
+
+\`\`\`dockerfile
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/static ./.next/static
+EXPOSE 3000
+CMD ["node", "server.js"]
+\`\`\`
+
+## next.config.ts — التحسين
+
+\`\`\`ts
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  // تفعيل standalone build
+  output: "standalone",
+  // ضغط الصور
+  images: {
+    formats: ["image/avif", "image/webp"],
+    remotePatterns: [{ protocol: "https", hostname: "example.com" }],
+  },
+  // حزم خارجية (لبعض المكتبات)
+  experimental: {
+    serverActions: { allowedOrigins: ["example.com"] },
+  },
+};
+
+export default nextConfig;
+\`\`\`
+
+## نصائح للأداء
+
+1. **استخدم Server Components** افتراضيًا — حزم أصغر
+2. **next/image** للصور (تحويل تلقائي للصيغ)
+3. **next/font** للخطوط (بدل Google Fonts)
+4. **lazy load** المكوّنات الثقيلة
+5. **cache** الـ API responses مع \`revalidate\`
+6. **minify** الـ HTML/CSS/JS تلقائيًا في الإنتاج
+
+## Analytics و Monitoring
+
+\`\`\`tsx
+// app/layout.tsx
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
+
+export default function RootLayout({ children }) {
+  return (
+    <html>
+      <body>
+        {children}
+        <Analytics />
+        <SpeedInsights />
+      </body>
+    </html>
+  );
+}
+\`\`\``,
+        codeExample: `// app/layout.tsx — مثال metadata كامل
+import type { Metadata } from "next";
+import "./globals.css";
+
+export const metadata: Metadata = {
+  title: {
+    default: "أكاديمية البرمجة",
+    template: "%s | أكاديمية البرمجة",
+  },
+  description: "تعلّم تطوير الويب الحديث خطوة بخطوة",
+  keywords: ["Next.js", "React", "TypeScript", "Tailwind", "Prisma"],
+  authors: [{ name: "Z.ai Academy" }],
+  metadataBase: new URL("https://academy.example.com"),
+  alternates: {
+    canonical: "/",
+    languages: { ar: "/ar", en: "/en" },
+  },
+  openGraph: {
+    title: "أكاديمية البرمجة",
+    description: "تعلّم تطوير الويب الحديث",
+    type: "website",
+    locale: "ar",
+    siteName: "أكاديمية البرمجة",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "أكاديمية البرمجة",
+    description: "تعلّم تطوير الويب الحديث",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true },
+  },
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="ar" dir="rtl">
+      <body>{children}</body>
+    </html>
+  );
+}`,
+        codeLanguage: "tsx",
+        order: 4,
+        duration: 22,
+        quiz: {
+          title: "اختبار: النشر والتحسين",
+          questions: [
+            {
+              text: "كيف تضيف metadata ديناميكي لكل صفحة؟",
+              correctIndex: 1,
+              explanation: "generateMetadata() async function تُرجع Metadata بناءً على params.",
+              choices: [
+                { text: "<head> يدويًا" },
+                { text: "generateMetadata() function" },
+                { text: "useEffect" },
+                { text: "next/font" },
+              ],
+            },
+            {
+              text: "ما الفائدة الرئيسية لـ output: 'standalone'؟",
+              correctIndex: 2,
+              explanation: "ينشئ build قائم بذاته قابل لـ self-hosting (Docker).",
+              choices: [
+                { text: "يحسّن TypeScript" },
+                { text: "يضيف dark mode" },
+                {
+                  text: "ينشئ build قابل لـ self-hosting",
+                },
+                { text: "يزيل CSS" },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        slug: "nextjs-auth",
+        title: "المصادقة مع NextAuth.js",
+        summary: "تسجيل الدخول، الجلسات، حماية المسارات، providers.",
+        content: `# المصادقة مع NextAuth.js
+
+NextAuth.js (Auth.js) أبسط طريقة للمصادقة في Next.js.
+
+## التثبيت والإعداد
+
+\`\`\`bash
+bun add next-auth
+\`\`\`
+
+\`\`\`ts
+// auth.config.ts
+import type { NextAuthConfig } from "next-auth";
+
+export const authConfig = {
+  pages: { signIn: "/login" },
+  callbacks: {
+    authorized({ auth, request }) {
+      const isLoggedIn = !!auth?.user;
+      const isOnDashboard = request.nextUrl.pathname.startsWith("/dashboard");
+      if (isOnDashboard) return isLoggedIn;
+      return true;
+    },
+  },
+  providers: [],
+} satisfies NextAuthConfig;
+\`\`\`
+
+\`\`\`ts
+// app/api/auth/[...nextauth]/route.ts
+import NextAuth from "next-auth";
+import { authConfig } from "@/auth.config";
+
+export const { GET, POST } = NextAuth(authConfig);
+\`\`\`
+
+## Provider: Credentials (البريد وكلمة المرور)
+
+\`\`\`ts
+import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
+
+export const { auth, handlers, signIn, signOut } = NextAuth({
+  providers: [
+    Credentials({
+      credentials: {
+        email: { type: "email" },
+        password: { type: "password" },
+      },
+      async authorize(credentials) {
+        const user = await db.user.findUnique({
+          where: { email: credentials.email },
+        });
+        if (!user || !verifyPassword(credentials.password, user.passwordHash)) {
+          return null;
+        }
+        return { id: user.id, email: user.email, name: user.name };
+      },
+    }),
+  ],
+});
+\`\`\`
+
+## Provider: OAuth (GitHub, Google, ...)
+
+\`\`\`ts
+import GitHub from "next-auth/providers/github";
+import Google from "next-auth/providers/google";
+
+export const { auth, handlers } = NextAuth({
+  providers: [
+    GitHub({ clientId: process.env.GITHUB_ID!, clientSecret: process.env.GITHUB_SECRET! }),
+    Google({ clientId: process.env.GOOGLE_ID!, clientSecret: process.env.GOOGLE_SECRET! }),
+  ],
+});
+\`\`\`
+
+## استخدام الجلسة في Server Components
+
+\`\`\`tsx
+import { auth } from "@/auth";
+
+export default async function Profile() {
+  const session = await auth();
+  if (!session?.user) return <p>سجّل الدخول</p>;
+  return <p>مرحبًا {session.user.name}</p>;
+}
+\`\`\`
+
+## استخدام الجلسة في Client Components
+
+\`\`\`tsx
+"use client";
+import { useSession } from "next-auth/react";
+
+function Profile() {
+  const { data: session, status } = useSession();
+  if (status === "loading") return <p>جارٍ...</p>;
+  if (!session) return <LoginButton />;
+  return <p>مرحبًا {session.user?.name}</p>;
+}
+\`\`\`
+
+## حماية المسارات (Middleware)
+
+\`\`\`ts
+// middleware.ts
+import NextAuth from "next-auth";
+import { authConfig } from "@/auth.config";
+
+export const { auth: middleware } = NextAuth(authConfig);
+
+export const config = {
+  matcher: ["/dashboard/:path*", "/profile/:path*"],
+};
+\`\`\`
+
+## زر تسجيل الدخول/الخروج
+
+\`\`\`tsx
+"use client";
+import { signIn, signOut } from "next-auth/react";
+
+function AuthButton() {
+  return (
+    <>
+      <button onClick={() => signIn("github")}>دخول بـ GitHub</button>
+      <button onClick={() => signOut()}>خروج</button>
+    </>
+  );
+}
+\`\`\`
+
+## قاعدة البيانات (Adapter)
+
+لحفظ المستخدمين والجلسات في قاعدة البيانات:
+
+\`\`\`ts
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import { db } from "@/lib/db";
+
+export const { handlers } = NextAuth({
+  adapter: PrismaAdapter(db),
+  providers: [...],
+  session: { strategy: "jwt" }, // أو "database"
+});
+\`\`\`
+
+## أفضل الممارسات
+
+1. **استخدم HTTPS دائمًا** في الإنتاج
+2. **hash كلمات المرور** بـ bcrypt قبل الحفظ
+3. **استخدم JWT sessions** للتطبيقات serverless
+4. **database sessions** للتحكم في إلغاء الجلسات
+5. **rate limit** محاولات الدخول لمنع brute force
+6. **CSRF token** — NextAuth يوفّره افتراضيًا
+7. **لا تخزّن tokens في localStorage** — استخدم cookies httpOnly`,
+        codeExample: `// مثال: حماية API route بالمصادقة
+import { auth } from "@/auth";
+import { NextResponse } from "next/server";
+
+export async function GET() {
+  const session = await auth();
+
+  // إن لم يكن مسجّل، ارجع 401
+  if (!session?.user) {
+    return NextResponse.json(
+      { error: "غير مصرّح" },
+      { status: 401 }
+    );
+  }
+
+  // مستخدم مسجّل — قم بالعملية
+  const data = await db.something.findMany({
+    where: { userId: session.user.id },
+  });
+
+  return NextResponse.json(data);
+}`,
+        codeLanguage: "ts",
+        order: 5,
+        duration: 25,
+        quiz: {
+          title: "اختبار: NextAuth",
+          questions: [
+            {
+              text: "أين تضع ملف [...]nextauth/route.ts؟",
+              correctIndex: 2,
+              explanation: "في app/api/auth/[...nextauth]/route.ts.",
+              choices: [
+                { text: "app/auth.ts" },
+                { text: "lib/auth.ts" },
+                {
+                  text: "app/api/auth/[...nextauth]/route.ts",
+                },
+                { text: "pages/api/auth.ts" },
+              ],
+            },
+            {
+              text: "كيف تحمي مسارًا بالكامل؟",
+              correctIndex: 1,
+              explanation: "بـ middleware.ts مع authorized callback.",
+              choices: [
+                { text: "useEffect" },
+                { text: "middleware.ts + authorized callback" },
+                { text: "next.config.ts" },
+                { text: "robots.ts" },
               ],
             },
           ],

@@ -401,3 +401,107 @@ Task: مراجعة المشروع وإضافة onboarding وتحدّي يومي 
 7. **[منخفض]** إضافة مؤثرات صوتية عند ربح XP / شارة
 8. **[منخفض]** إضافة dark/light theme toggle في الـ onboarding
 
+
+---
+
+## Task ID: 5
+Agent: Z.ai Code (cron review round 4)
+Task: مراجعة وإضافة مكافأة تحدّي يومي ×2 وتفاصيل الشارات ودرس جديد
+
+### الحالة الحالية للمشروع (تقييم)
+- ✅ المشروع مستقر ويعمل على المنفذ 3000
+- ✅ `bun run lint` يجتاز بدون أخطاء
+- ✅ XP system يعمل (255 XP, Level 2)
+- ✅ Daily challenge API يعمل
+- ✅ Leaderboard يعمل
+- لا أخطاء في سجل الـ dev server
+
+### الأهداف المنجزة في هذه الجولة
+
+#### 1. مكافأة التحدّي اليومي ×2 (Daily Challenge XP Multiplier)
+- **تحديث `awardXP`** في `/lib/xp.ts` — أضفت معامل `multiplier` اختياري:
+  - `awardXP(sessionId, action, refId, multiplier = 1)`
+  - يحسب النقاط = `basePoints * multiplier`
+- **`isTodayDailyChallenge(lessonId)`** — دالة حتمية في `/api/lessons/[id]/check`:
+  - تحقق بنفس منطق `/api/daily-challenge` (hash التاريخ)
+  - تأكدت من تطابق `orderBy: { id: "asc" }` في كلا الـ APIs
+- **منطق التطبيق** — عند اجتياز اختبار درس هو تحدّي اليوم:
+  - quiz_pass: 30 × 2 = 60 XP
+  - quiz_perfect: 50 × 2 = 100 XP
+  - lesson_complete: 50 × 2 = 100 XP (لو لم يكن مكتملًا)
+  - track_complete: 200 XP (لا مضاعفة — نادر)
+- **عرض الـ badge في الـ LessonView**:
+  - أيقونة 🔥 + "تحدّي اليوم · XP ×2" مع animate-pulse
+  - يظهر فقط إذا الدرس هو تحدّي اليوم
+- **Toast محسّن** — يضيف "🔥 مكافأة التحدّي ×2" للأسباب
+- **تحقق**: XP ذهب من 305 → 465 (+160) عند اجتياز اختبار تحدّي اليوم بنسبة 100%
+
+#### 2. تفاصيل الشارات مع شريط التقدّم (Achievement Progress Detail)
+- **`achievement-progress-card.tsx`** — بطاقة شارة مع تقدّم حي:
+  - يحلل `condition` (مثل "lessons_completed:5") إلى نوع + هدف
+  - يجلب التقدّم الحالي من `/api/progress` + `/api/xp`
+  - يعرض "X / Y دروس مكتملة" مع progress bar
+  - يعرض الهدف للمكسوبة أيضًا
+  - زر لفتح modal التفاصيل
+- **`AchievementDetailModal`** — نافذة منبثقة لكل شارة:
+  - رأس متدرّج (amber للشارات المكسوبة، رمادي للمقفلة)
+  - emoji كبير (🏆 أو 🔒) مع spring animation
+  - عنوان + وصف
+  - بطاقة التقدّم الحالية
+  - تاريخ الكسب (لو مكسوبة) بصيغة عربية
+  - رسالة تحفيزية (لو مقفلة)
+  - blobs ضبابية متحركة في الخلفية
+- **تحديث `achievements-view.tsx`**:
+  - استبدلت الـ cards القديمة بـ AchievementProgressCard
+  - أضفت state `selected` لإدارة الـ modal
+  - حركات staggered عند الظهور
+
+#### 3. Leaderboard حقيقي (Real DB-backed)
+- **تحديث `/api/leaderboard`** — يجمع:
+  - مستخدمين حقيقيين من `UserXP` table (مجهّلين كـ "متعلّم #NNN")
+  - 10 متعلّمين وهميين (ghost learners)
+  - المستخدم الحالي (دائمًا مُدرج)
+- **تحقق**: 11 متعلم إجمالي (1 حقيقي + 9 وهمي + 1 حالي)
+- المستخدم الحقيقي بـ 465 XP ranked #8
+- يعرض `realDbLearners` count للشفافية
+
+#### 4. دروس جديدة (+4)
+أضفت 4 دروس جديدة (الإجمالي الآن **23 درس**):
+- **React 19** (من 3 → 5 دروس):
+  - "Context API و إدارة الحالة العامة" — prop drilling، Context، متى تنتقل لـ Zustand
+  - "أنماط React المتقدمة" — custom hooks، compound components، render props، HOCs، lazy loading، error boundaries، forwardRef
+- **Next.js 16** (من 3 → 5 دروس):
+  - "النشر والتحسين للإنتاج" — metadata، sitemap، robots، Vercel، Docker، next.config
+  - "المصادقة مع NextAuth.js" — credentials، OAuth، sessions، middleware، Prisma adapter
+
+### نتائج التحقق (QA via agent-browser)
+- ✅ `bun run lint` يجتاز بدون أخطاء
+- ✅ daily-challenge API يُرجع الدرس الصحيح مع `orderBy: { id: "asc" }`
+- ✅ isTodayDailyChallenge يطابق نفس الدرس
+- ✅ badge "تحدّي اليوم · XP ×2" يظهر في الـ Lesson hero
+- ✅ XP toast يعرض "🔥 مكافأة التحدّي ×2" للأسباب
+- ✅ اختبار التحدّي اليومي بنسبة 100% منح 160 XP (60+100)
+- ✅ XP total ذهب من 305 → 465
+- ✅ بطاقات الشارات تعرض "X / Y" مع progress bar
+- ✅ modal التفاصيل يفتح عند النقر مع emoji + تقدم
+- ✅ Leaderboard: 11 متعلم (1 حقيقي + 9 وهمي + 1 حالي)
+- ✅ المستخدم ranked #8 بـ 465 XP
+- ✅ React track الآن 5 دروس
+- ✅ Next.js track الآن 5 دروس
+- ✅ لا أخطاء في سجل الـ dev server
+
+### مخاطر/أمور غير محلولة
+- **Re-seed wipes progress**: إعادة التلقيم مسحت تقدّم المستخدم. هذا متوقع للتطوير.
+- **Daily challenge idempotency**: لو أكمل المستخدم درس التحدّي يدويًا (mark complete)، لا يحصل على المضاعفة — فقط عند اجتياز الاختبار. هذا مقصود.
+- **Real DB users in leaderboard**: الأسماء مجهّلة ("متعلّم #123"). للتطبيق الحقيقي، يجب إضافة حقل `name` لجدول UserXP.
+
+### توصيات للمرحلة القادمة (الأولويات)
+1. **[عالٍ]** إضافة bookmarks/favorites للدروس (يمكن للمستخدم حفظ دروس للمراجعة)
+2. **[عالٍ]** إضافة confetti animation عند ربح XP كبير / شارة جديدة / رفع مستوى
+3. **[متوسط]** إضافة "الدرس التالي الموصى به" بناءً على تقدّم المستخدم
+4. **[متوسط]** إضافة مولّد خرائط ذهنية للمسار (mind map view)
+5. **[متوسط]** إضافة مؤثرات صوتية اختيارية عند ربح XP
+6. **[منخفض]** إضافة دعم تعدد اللغات (عربي/إنجليزي)
+7. **[منخفض]** إضافة صفحة بحث عامة عن كل الدروس
+8. **[منخفض]** إضافة keyboard shortcuts (J/K للتنقل بين الدروس)
+

@@ -16,6 +16,7 @@ import {
   BookOpen,
   Lightbulb,
   PartyPopper,
+  Flame,
 } from "lucide-react";
 import { useUI } from "@/lib/store";
 import { useSessionId } from "@/hooks/use-session-id";
@@ -84,6 +85,20 @@ export function LessonView({ lessonId }: { lessonId: string }) {
         return r.json();
       }),
   });
+
+  // Check if this lesson is today's daily challenge
+  const { data: dailyChallenge } = useQuery<{
+    lesson: { id: string };
+    challengeDay: number;
+  }>({
+    queryKey: ["daily-challenge", sessionId],
+    queryFn: () =>
+      fetch(
+        `/api/daily-challenge?sessionId=${encodeURIComponent(sessionId)}`
+      ).then((r) => r.json()),
+    enabled: !!sessionId && sessionId !== "ssr",
+  });
+  const isDailyChallenge = dailyChallenge?.lesson?.id === lessonId;
 
   const { data: progress } = useQuery<ProgressData>({
     queryKey: ["progress", sessionId],
@@ -224,6 +239,15 @@ export function LessonView({ lessonId }: { lessonId: string }) {
                     <Badge className="gap-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0">
                       <CheckCircle2 className="h-3 w-3" />
                       مكتمل
+                    </Badge>
+                  </>
+                )}
+                {isDailyChallenge && (
+                  <>
+                    <span>•</span>
+                    <Badge className="gap-1 bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 animate-pulse">
+                      <Flame className="h-3 w-3" />
+                      تحدّي اليوم · XP ×2
                     </Badge>
                   </>
                 )}
@@ -377,6 +401,15 @@ function Quiz({
     total: number;
     results: { questionId: string; chosenChoiceId: string | null; correctChoiceId: string; isCorrect: boolean }[];
     passed: boolean;
+    isDailyChallenge?: boolean;
+    multiplier?: number;
+    xpAwarded?: number;
+    xpBreakdown?: {
+      quizPass: number;
+      quizPerfect: number;
+      lessonComplete: number;
+      trackComplete: number;
+    };
   } | null>(null);
   const [showExplanations, setShowExplanations] = useState(false);
 
@@ -414,6 +447,7 @@ function Quiz({
         if (breakdown?.quizPass) reasons.push("اجتياز اختبار");
         if (breakdown?.quizPerfect) reasons.push("نتيجة كاملة");
         if (breakdown?.trackComplete) reasons.push("إكمال مسار");
+        if (data.isDailyChallenge) reasons.push(`🔥 مكافأة التحدّي ×${data.multiplier ?? 2}`);
         toast.success(`⚡ +${data.xpAwarded} نقطة خبرة!`, {
           description: reasons.join(" · "),
         });
