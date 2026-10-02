@@ -10,6 +10,7 @@ import { TrackView } from "@/components/academy/track-view";
 import { LessonView } from "@/components/academy/lesson-view";
 import { ProgressView } from "@/components/academy/progress-view";
 import { AchievementsView } from "@/components/academy/achievements-view";
+import { OnboardingModal } from "@/components/academy/onboarding-modal";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,6 +41,7 @@ function AcademyApp() {
         {view.type === "achievements" && <AchievementsView />}
       </main>
       <Footer />
+      <OnboardingModal />
     </div>
   );
 }

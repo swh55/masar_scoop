@@ -46,7 +46,20 @@ export function Footer() {
           <p className="flex items-center gap-1.5">
             صُنع بـ <Heart className="h-3.5 w-3.5 fill-rose-500 text-rose-500" /> لتعلّم البرمجة
           </p>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => {
+                try {
+                  window.localStorage.removeItem("academy-onboarding-completed");
+                  window.location.reload();
+                } catch {
+                  // ignore
+                }
+              }}
+              className="hover:text-foreground transition-colors"
+            >
+              إعادة عرض المقدمة
+            </button>
             <span>© 2025 أكاديمية البرمجة</span>
             <Github className="h-4 w-4" />
           </div>

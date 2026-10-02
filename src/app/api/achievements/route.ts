@@ -13,9 +13,11 @@ async function syncAchievements(sessionId: string): Promise<{
     tracksCompleted: number;
     tracksStarted: number;
     perfectQuizzes: number;
+    quizzesPassed: number;
+    xpTotal: number;
   };
 }> {
-  const [trackProgress, lessonProgress, allAchievements, earnedAlready] =
+  const [trackProgress, lessonProgress, allAchievements, earnedAlready, userXP] =
     await Promise.all([
       db.trackProgress.findMany({
         where: { sessionId },
@@ -27,6 +29,7 @@ async function syncAchievements(sessionId: string): Promise<{
         where: { sessionId },
         select: { achievementId: true },
       }),
+      db.userXP.findUnique({ where: { sessionId } }),
     ]);
 
   const earnedIds = new Set(earnedAlready.map((e) => e.achievementId));
@@ -36,16 +39,32 @@ async function syncAchievements(sessionId: string): Promise<{
   const tracksCompleted = trackProgress.filter((t) => t.percent >= 100).length;
   const tracksStarted = trackProgress.length;
   const perfectQuizzes = lessonProgress.filter((l) => l.bestScore === 100).length;
+  const quizzesPassed = lessonProgress.filter((l) => l.bestScore >= 60).length;
+  const xpTotal = userXP?.total ?? 0;
 
   for (const a of allAchievements) {
     if (earnedIds.has(a.id)) continue;
 
     let achieved = false;
+    // lessons_completed:N
     if (a.condition === "lessons_completed:1") achieved = lessonsCompleted >= 1;
+    if (a.condition === "lessons_completed:5") achieved = lessonsCompleted >= 5;
     if (a.condition === "lessons_completed:10") achieved = lessonsCompleted >= 10;
+    // track_completed:N
     if (a.condition === "track_completed:1") achieved = tracksCompleted >= 1;
+    if (a.condition === "tracks_completed:3") achieved = tracksCompleted >= 3;
+    // tracks_started:N
     if (a.condition === "tracks_started:3") achieved = tracksStarted >= 3;
+    // perfect_quizzes:N
     if (a.condition === "perfect_quizzes:3") achieved = perfectQuizzes >= 3;
+    if (a.condition === "perfect_quizzes:5") achieved = perfectQuizzes >= 5;
+    // quizzes_passed:N
+    if (a.condition === "quizzes_passed:5") achieved = quizzesPassed >= 5;
+    // xp_total:N
+    if (a.condition.startsWith("xp_total:")) {
+      const threshold = parseInt(a.condition.split(":")[1], 10);
+      achieved = xpTotal >= threshold;
+    }
 
     if (achieved) {
       await db.userAchievement.create({
@@ -59,7 +78,14 @@ async function syncAchievements(sessionId: string): Promise<{
 
   return {
     newlyEarned,
-    stats: { lessonsCompleted, tracksCompleted, tracksStarted, perfectQuizzes },
+    stats: {
+      lessonsCompleted,
+      tracksCompleted,
+      tracksStarted,
+      perfectQuizzes,
+      quizzesPassed,
+      xpTotal,
+    },
   };
 }
 

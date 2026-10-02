@@ -3277,6 +3277,48 @@ const achievements = [
     icon: "Languages",
     condition: "tracks_started:3",
   },
+  {
+    slug: "quick-learner",
+    title: "متعلّم سريع",
+    description: "أكملت 5 دروس",
+    icon: "Zap",
+    condition: "lessons_completed:5",
+  },
+  {
+    slug: "quiz-champion",
+    title: "بطل الاختبارات",
+    description: "اجتزت 5 اختبارات",
+    icon: "Award",
+    condition: "quizzes_passed:5",
+  },
+  {
+    slug: "perfectionist",
+    title: "الكمال",
+    description: "حققت 100% في 5 اختبارات",
+    icon: "Sparkles",
+    condition: "perfect_quizzes:5",
+  },
+  {
+    slug: "master-3-tracks",
+    title: "ماستر الويب",
+    description: "أكملت 3 مسارات كاملة",
+    icon: "Trophy",
+    condition: "tracks_completed:3",
+  },
+  {
+    slug: "xp-500",
+    title: "جامع النقاط",
+    description: "وصلت إلى 500 نقطة خبرة",
+    icon: "Star",
+    condition: "xp_total:500",
+  },
+  {
+    slug: "xp-1000",
+    title: "محترف متمكّن",
+    description: "وصلت إلى 1000 نقطة خبرة",
+    icon: "Star",
+    condition: "xp_total:1000",
+  },
 ];
 
 async function main() {

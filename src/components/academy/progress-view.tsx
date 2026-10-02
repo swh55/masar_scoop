@@ -19,6 +19,7 @@ import { useStreak } from "@/hooks/use-streak";
 import { TrackIcon } from "./track-icon";
 import { XPCard } from "./xp-indicator";
 import { ActivityHeatmap } from "./activity-heatmap";
+import { LeaderboardCard } from "./leaderboard-card";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -249,6 +250,11 @@ export function ProgressView() {
           </div>
         )}
       </Card>
+
+      {/* Leaderboard */}
+      <div className="mb-6">
+        <LeaderboardCard />
+      </div>
 
       {/* Quick links */}
       <Card className="p-6">

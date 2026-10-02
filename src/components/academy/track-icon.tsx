@@ -13,6 +13,9 @@ import {
   GraduationCap,
   Footprints,
   Languages,
+  Zap,
+  Sparkles,
+  Star,
   type LucideIcon,
 } from "lucide-react";
 
@@ -29,6 +32,9 @@ const ICONS: Record<string, LucideIcon> = {
   GraduationCap,
   Footprints,
   Languages,
+  Zap,
+  Sparkles,
+  Star,
 };
 
 export function TrackIcon({

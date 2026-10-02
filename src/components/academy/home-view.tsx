@@ -23,6 +23,7 @@ import {
 import { useUI } from "@/lib/store";
 import { useSessionId } from "@/hooks/use-session-id";
 import { TrackIcon } from "./track-icon";
+import { DailyChallengeCard } from "./daily-challenge-card";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -310,6 +311,11 @@ export function HomeView() {
         );
       })()}
 
+      {/* Daily Challenge — always visible */}
+      <section className="container mx-auto px-4 sm:px-6 py-12">
+        <DailyChallengeCard />
+      </section>
+
       {/* Tracks grid */}
       <section id="tracks" className="container mx-auto px-4 sm:px-6 py-16 sm:py-20">
         <div className="mb-8 text-center">
@@ -431,45 +437,63 @@ export function HomeView() {
                 icon: Target,
                 title: "محتوى عملي 100%",
                 desc: "كل درس يحتوي على مثال كود حقيقي قابل للتشغيل، لا مجرد شروحات نظرية.",
+                color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
               },
               {
                 icon: Zap,
-                title: "اختبارات تفاعلية",
-                desc: "اختبر فهمك بعد كل درس باختبارات قصيرة، واحصل على تغذية راجعة فورية.",
+                title: "محرر كود تفاعلي",
+                desc: "اكتب وعدّل الكود مباشرة في المتصفح، واضغط 'تشغيل' لترى النتيجة فورًا!",
+                color: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
               },
               {
                 icon: Trophy,
-                title: "شارات إنجاز",
-                desc: "اربح شارات كلما أكملت مسارًا أو درسًا — حفّز نفسك على الاستمرار.",
+                title: "نقاط ومستويات",
+                desc: "اربح XP مع كل درس واختبار، وارتقِ في المستويات من مبتدئ إلى أسطورة!",
+                color: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
               },
               {
                 icon: TrendingUp,
-                title: "تتبّع التقدّم",
-                desc: "شاهد إحصائياتك، دروسك المكتملة، ومستواك في كل مسار بوضوح.",
-              },
-              {
-                icon: Sparkles,
-                title: "بنية حديثة",
-                desc: "تتعلم على مشروع Next.js 16 حقيقي، بنفس الأدوات التي يستخدمها المحترفون.",
+                title: "تتبّع النشاط",
+                desc: "خريطة نشاط بأسلوب GitHub تظهر تقدّمك اليومي — حافظ على سلسلتك!",
+                color: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
               },
               {
                 icon: Users,
-                title: "للجميع",
-                desc: "من المبتدئ إلى المتقدم — المسارات مصمّمة لكل المستويات.",
+                title: "جدول المتصدّرين",
+                desc: "نافس متعلّمين آخرين وتابع ترتيبك بينهم — التحفيز الاجتماعي يصنع الفارق.",
+                color: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
               },
-            ].map((feature) => (
-              <Card
+              {
+                icon: Sparkles,
+                title: "تحدّي يومي",
+                desc: "درس جديد كل يوم يتجدّد تلقائيًا — تحدٍّ مشترك لكل المتعلّمين.",
+                color: "bg-teal-500/10 text-teal-600 dark:text-teal-400",
+              },
+            ].map((feature, idx) => (
+              <motion.div
                 key={feature.title}
-                className="p-6 border-border/60 hover:border-primary/40 hover:shadow-md transition-all"
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.4, delay: idx * 0.06 }}
               >
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary mb-4">
-                  <feature.icon className="h-5 w-5" />
-                </div>
-                <h3 className="font-bold text-lg mb-2">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {feature.desc}
-                </p>
-              </Card>
+                <Card
+                  className="p-6 border-border/60 hover:border-primary/40 hover:shadow-lg hover:-translate-y-1 transition-all h-full group"
+                >
+                  <div
+                    className={cn(
+                      "flex h-11 w-11 items-center justify-center rounded-xl mb-4 transition-transform group-hover:scale-110",
+                      feature.color
+                    )}
+                  >
+                    <feature.icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="font-bold text-lg mb-2">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {feature.desc}
+                  </p>
+                </Card>
+              </motion.div>
             ))}
           </div>
         </div>
