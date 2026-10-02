@@ -21,6 +21,7 @@ import { XPCard } from "./xp-indicator";
 import { ActivityHeatmap } from "./activity-heatmap";
 import { LeaderboardCard } from "./leaderboard-card";
 import { CertificateList } from "./certificate";
+import { ProgressExportImport } from "./progress-export-import";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -260,6 +261,11 @@ export function ProgressView() {
       {/* Certificates */}
       <div className="mb-6">
         <CertificateList />
+      </div>
+
+      {/* Export/Import Progress */}
+      <div className="mb-6">
+        <ProgressExportImport />
       </div>
 
       {/* Quick links */}

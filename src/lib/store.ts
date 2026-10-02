@@ -9,7 +9,8 @@ export type View =
   | { type: "lesson"; lessonId: string }
   | { type: "progress" }
   | { type: "achievements" }
-  | { type: "bookmarks" };
+  | { type: "bookmarks" }
+  | { type: "track-summary"; trackId: string };
 
 type UIState = {
   view: View;
@@ -19,6 +20,7 @@ type UIState = {
   openProgress: () => void;
   openAchievements: () => void;
   openBookmarks: () => void;
+  openTrackSummary: (trackId: string) => void;
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   certificateTrackId: string | null;
@@ -40,6 +42,8 @@ export const useUI = create<UIState>()(
         set({ view: { type: "achievements" }, sidebarOpen: false }),
       openBookmarks: () =>
         set({ view: { type: "bookmarks" }, sidebarOpen: false }),
+      openTrackSummary: (trackId) =>
+        set({ view: { type: "track-summary", trackId }, sidebarOpen: false }),
       sidebarOpen: false,
       setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
       certificateTrackId: null,

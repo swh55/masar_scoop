@@ -13,6 +13,7 @@ import {
   Lock,
   Sparkles,
   Award,
+  BarChart3,
 } from "lucide-react";
 import { useUI } from "@/lib/store";
 import { useSessionId } from "@/hooks/use-session-id";
@@ -67,7 +68,7 @@ function useSessionIdLocal() {
 }
 
 export function TrackView({ trackId }: { trackId: string }) {
-  const { goHome, openLesson, openCertificate } = useUI();
+  const { goHome, openLesson, openCertificate, openTrackSummary } = useUI();
   const sessionId = useSessionIdLocal();
 
   const { data: track, isLoading } = useQuery<TrackDetail>({
@@ -188,11 +189,30 @@ export function TrackView({ trackId }: { trackId: string }) {
                     مكتمل! أحسنت
                   </div>
                   <button
+                    onClick={() => openTrackSummary(track.id)}
+                    className="inline-flex items-center gap-2 rounded-full bg-sky-100 dark:bg-sky-500/15 px-4 py-1.5 text-sm font-medium text-sky-700 dark:text-sky-400 hover:bg-sky-200 dark:hover:bg-sky-500/25 transition-colors"
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    ملخص المسار
+                  </button>
+                  <button
                     onClick={() => openCertificate(track.id)}
                     className="inline-flex items-center gap-2 rounded-full bg-amber-100 dark:bg-amber-500/15 px-4 py-1.5 text-sm font-medium text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-500/25 transition-colors"
                   >
                     <Award className="h-4 w-4" />
                     عرض الشهادة
+                  </button>
+                </div>
+              )}
+
+              {!isComplete && percent > 0 && (
+                <div className="mt-4">
+                  <button
+                    onClick={() => openTrackSummary(track.id)}
+                    className="inline-flex items-center gap-2 rounded-full bg-muted/60 px-4 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    عرض ملخص التقدّم
                   </button>
                 </div>
               )}

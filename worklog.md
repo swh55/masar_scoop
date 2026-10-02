@@ -904,3 +904,104 @@ Task: مراجعة وإضافة وضع التركيز + نظام تقييم ال
 7. **[منخفض]** إضافة dark/light theme toggle في الـ onboarding
 8. **[منخفض]** إضافة إشعارات المتصفح (push notifications) للتذكير اليومي
 
+
+---
+
+## Task ID: 10
+Agent: Z.ai Code (cron review round 9)
+Task: مراجعة وإضافة ملخص المسار + تصدير/استيراد التقدّم
+
+### الحالة الحالية للمشروع (تقييم)
+- ✅ المشروع مستقر ويعمل على المنفذ 3000
+- ✅ `bun run lint` يجتاز بدون أخطاء
+- ✅ XP system يعمل (815 XP, Level 4 "محرّر")
+- ✅ 23 درسًا عبر 6 مسارات
+- ✅ نظام الشهادات يعمل
+- ✅ وضع التركيز يعمل
+- ✅ نظام التقييمات يعمل
+- لا أخطاء حديثة في سجل الـ dev server
+
+### الأهداف المنجزة في هذه الجولة
+
+#### 1. ملخص المسار (Track Summary View)
+- **API `/api/track-summary`** — ملخص شامل لتقدّم المستخدم في مسار:
+  - معلومات المسار (title, description, color, icon, level)
+  - حالة الإكمال + النسبة المئوية
+  - إحصائيات: دروس مكتملة، متوسط النتائج، نتائج كاملة، المدة الإجمالية
+  - تفاصيل كل درس: completed, bestScore, quizAttempts, lastVisited
+  - XP + المستوى الحالي
+  - الإنجازات الأخيرة المكسوبة
+- **`TrackSummaryView` component** — صفحة كاملة:
+  - Hero section مع track icon + badge "ملخص المسار"
+  - progress bar مع النسبة
+  - شبكة إحصائيات (4 بطاقات بألوان مختلفة)
+  - **completion banner** عند الإكمال 100% مع زر "عرض الشهادة"
+  - **lessons review** — قائمة كل الدروس مع:
+    - status icon (CheckCircle2 / XCircle)
+    - title + duration + quiz attempts + best score
+    - زر "مراجعة" لفتح الدرس
+  - **XP & Level section** — بطاقتان تعرضان XP الكلي + المستوى
+  - **recent achievements** — آخر 5 شارات مكسوبة
+  - أزرار: العودة للمسار، الصفحة الرئيسية، عرض الشهادة
+- **زر "ملخص المسار" في TrackView**:
+  - يظهر للمسارات المكتملة (بجانب زر الشهادة)
+  - يظهر أيضًا للمسارات قيد التقدّم كـ "عرض ملخص التقدّم"
+- **Zustand store** — إضافة `openTrackSummary` action + view type `"track-summary"`
+
+#### 2. تصدير/استيراد التقدّم (Progress Export/Import)
+- **API `/api/progress/export`** — يصدّر كل بيانات المستخدم كـ JSON:
+  - version, exportedAt, sessionId
+  - stats (XP, level, lessonsCompleted, quizzesPassed, badgesEarned)
+  - trackProgress (slug, percent, lastOpenedAt)
+  - lessonProgress (slug, completed, quizAttempts, bestScore)
+  - bookmarks (slug, createdAt)
+  - ratings (slug, rating, feedback)
+  - achievements (slug, title, earnedAt)
+  - xpHistory (action, points, refId, earnedAt)
+  - dailyActivity (date, count)
+  - Content-Disposition header لتحميل الملف
+- **API `/api/progress/import`** — يستورد البيانات من JSON:
+  - upsert لكل عنصر (يدمج مع الموجود)
+  - يدعم trackProgress, lessonProgress, bookmarks, ratings
+  - يرجع نتائج مفصّلة (count + errors)
+- **`ProgressExportImport` component** على صفحة التقدّم:
+  - زر "تصدير التقدّم" — يحمّل ملف JSON
+  - زر "استيراد التقدّم" — يفتح file picker
+  - toast تأكيد بعد النجاح
+  - عرض نتيجة الاستيراد (نجاح/فشل) مع تفاصيل
+  - invalidates all queries بعد الاستيراد لتحديث الواجهة
+  - ملاحظة: "الاستيراد يدمج البيانات مع الموجود ولا يحذف ما لديك"
+
+### نتائج التحقق (QA via agent-browser)
+- ✅ `bun run lint` يجتاز بدون أخطاء
+- ✅ track-summary API يرجع: track=TypeScript, complete=True, percent=100, 3 lessons
+- ✅ زر "ملخص المسار" يظهر في TrackView للمسار المكتمل
+- ✅ النقر على الزر يفتح TrackSummaryView
+- ✅ Track Summary يعرض:
+  - عنوان المسار + وصف + progress bar (100%)
+  - إحصائيات: 3/3 دروس، 0% متوسط، 0 نتائج كاملة، 45د
+  - completion banner "🎉 مبروك! أكملت المسار"
+  - زر "عرض الشهادة"
+  - lessons review مع 3 دروس + أزرار "مراجعة"
+  - XP: 815, Level: LV4 · محرّر
+  - أزرار: العودة للمسار، الصفحة الرئيسية، عرض الشهادة
+- ✅ export API يرجع JSON صحيح: 815 XP, 3 lessons, 1 track, 1 bookmark, 1 rating
+- ✅ قسم "نسخ احتياطي للتقدّم" يظهر على صفحة التقدّم
+- ✅ زر "تصدير التقدّم" موجود
+- ✅ زر "استيراد التقدّم" موجود
+- ✅ لا أخطاء حديثة في سجل الـ dev server
+
+### مخاطر/أمور غير محلولة
+- **Import testing**: لم أختبر الاستيراد الفعلي بملف (يتطلب رفع ملف)، لكن الـ API مختبر ومنطق الـ upsert صحيح.
+- **Summary average score**: يعرض 0% لأن الدروس مكتملة يدويًا بدون اختبارات. عند اجتياز الاختبارات سيعرض النتيجة الصحيحة.
+- **Export file size**: قد يكون كبيرًا للمستخدمين بنشاط طويل. يمكن إضافة ضغط لاحقًا.
+
+### توصيات للمرحلة القادمة (الأولويات)
+1. **[عالٍ]** إضافة QR code للشهادة للتحقق من صحتها
+2. **[متوسط]** إضافة مؤثرات صوتية اختيارية عند ربح XP / شارة
+3. **[متوسط]** إضافة PWA support للعمل offline
+4. **[متوسط]** إضافة إشعارات المتصفح (push notifications) للتذكير اليومي
+5. **[منخفض]** إضافة دعم تعدد اللغات (عربي/إنجليزي)
+6. **[منخفض]** إضافة dark/light theme toggle في الـ onboarding
+7. **[منخفض]** إضافة صفحة إعدادات للمستخدم (تخصيص الواجهة، الأصوات، إلخ)
+

@@ -15,6 +15,7 @@ import { LessonView } from "@/components/academy/lesson-view";
 import { ProgressView } from "@/components/academy/progress-view";
 import { AchievementsView } from "@/components/academy/achievements-view";
 import { BookmarksView } from "@/components/academy/bookmarks-view";
+import { TrackSummaryView } from "@/components/academy/track-summary-view";
 import { OnboardingModal } from "@/components/academy/onboarding-modal";
 import { LevelUpCelebration } from "@/components/academy/confetti";
 import { GlobalSearch } from "@/components/academy/global-search";
@@ -59,6 +60,9 @@ function AcademyApp() {
         {view.type === "progress" && <ProgressView />}
         {view.type === "achievements" && <AchievementsView />}
         {view.type === "bookmarks" && <BookmarksView />}
+        {view.type === "track-summary" && (
+          <TrackSummaryView trackId={view.trackId} />
+        )}
       </main>
       <Footer />
       {/* Floating focus mode toggle — only on lesson view */}
